@@ -21,6 +21,11 @@ export interface AttrDef {
   max: number;
   /** 开局随机区间 */
   init: [number, number];
+  /**
+   * 致命属性白名单（09 文档 §3）：**只有 fatal 属性归零才等于死亡**，
+   * 其余属性归零只是「困境」，不结束人生。缺省 = 非致命。
+   */
+  fatal?: boolean;
 }
 
 /** 属性系统定义 */
@@ -47,7 +52,7 @@ export const CLASSIC5: AttrSystem = {
   attrs: [
     { key: 'appearance', name: '颜值', desc: '外貌与外在吸引力，影响他人第一印象。', min: 0, max: 20, init: [4, 12] },
     { key: 'intelligence', name: '智力', desc: '学习、判断与洞察力。', min: 0, max: 20, init: [4, 12] },
-    { key: 'constitution', name: '体质', desc: '身体与抗压能力，过低会病痛缠身。', min: 0, max: 20, init: [4, 12] },
+    { key: 'constitution', name: '体质', desc: '身体与抗压能力，过低会病痛缠身。', min: 0, max: 20, init: [4, 12], fatal: true },
     { key: 'family', name: '家境', desc: '物质条件与社会资源。', min: 0, max: 20, init: [2, 14] },
     { key: 'happiness', name: '快乐', desc: '心境与精神状态。', min: 0, max: 20, init: [5, 12] },
   ],
@@ -77,7 +82,7 @@ export const HEART6: AttrSystem = {
     { key: 'empathy', name: '通感', desc: '共情与打动他人的能力。', min: 0, max: 20, init: [4, 12] },
     { key: 'ingenuity', name: '机变', desc: '应变与临场思考，危机时的额外选项。', min: 0, max: 20, init: [4, 12] },
     { key: 'reverie', name: '遐思', desc: '想象力与灵感，与世界异象交互的钥匙。', min: 0, max: 20, init: [3, 12] },
-    { key: 'vitality', name: '行力', desc: '行动力与精力，能否主动踏出一步。', min: 0, max: 20, init: [4, 13] },
+    { key: 'vitality', name: '行力', desc: '行动力与精力，能否主动踏出一步。', min: 0, max: 20, init: [4, 13], fatal: true },
   ],
   hidden: { key: 'fate', name: '命途', desc: '隐藏属性，由开局背景与属性倾向共同生成，决定偶遇与灾祸。', min: 0, max: 20, init: [3, 13] },
   map: {

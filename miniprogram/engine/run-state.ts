@@ -7,7 +7,7 @@
  *   - 保留最近 5 局，超出按 updatedAt 淘汰；云存档放二期
  */
 
-import type { AttrSystemId, Effects, LifeModel, Stage } from './schema';
+import type { AttrSystemId, Debuff, Effects, LifeModel, Stage } from './schema';
 import type { CharacterCard, PsycheState } from '../data/traits/types';
 
 /** 一局的状态：进行中 / 已死亡 / 已完结（episodic 多结局用） */
@@ -28,6 +28,8 @@ export interface HistoryEntry {
   text?: string;
   /** 本次产生的变化（总结图可展示关键节点） */
   effects?: Effects;
+  /** 本次付出的「代价」（10 文档 §2：成功但有代价）；被 costUnless 免除时不记 */
+  cost?: Effects;
 }
 
 /**
@@ -90,6 +92,11 @@ export interface RunState {
    * 02 文档 7.1 的「分档升降只补差额」需要知道旧档位，03 文档未定义该字段，引擎暂存于此。
    */
   traitLevels: Record<string, number>;
+  /**
+   * 生效中的伤势 / 病根（09 文档 §5.2）：每年结算一次 perYear / costPerYear，
+   * years 递减到期后移除，permanent 的永不自然痊愈。
+   */
+  debuffs: Debuff[];
 
   // —— 推演进度 ——
   /** 已触发过的 once 事件 id */
@@ -112,7 +119,7 @@ export interface RunState {
 /* ------------------------------------------------------------------ */
 
 /** 当前存档版本；结构变更时 +1 并补 migrateRunState 分支 */
-export const RUN_VERSION = 1;
+export const RUN_VERSION = 2;
 
 /** 本地存档 key 前缀 */
 export const RUN_KEY_PREFIX = 'run:';
@@ -222,6 +229,7 @@ export function createRunState(input: NewRunInput, now = Date.now()): RunState {
     psyche: { ...input.psyche, conditions: [...input.psyche.conditions] },
     relations: [],
     traitLevels: {},
+    debuffs: [],
     firedOnce: [],
     history: [],
     status: 'playing',
@@ -319,9 +327,16 @@ export function listRuns(): RunSummary[] {
   return out.sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
-/** 版本迁移：结构不兼容时返回 null */
+/**
+ * 版本迁移：**逐级**升级，升不动（结构不兼容）时返回 null。
+ * v1 → v2：新增 `RunState.debuffs`（09 文档 §5.2），旧档补空数组即可，不影响已有进度。
+ */
 export function migrateRunState(raw: RunState): RunState | null {
-  if (raw.version === RUN_VERSION) return raw;
-  // 目前只有 v1；未来版本在此按 version 逐级升级后再返回
-  return null;
+  let cur = raw;
+  if (cur.version === 1) {
+    cur = { ...cur, debuffs: [], version: 2 };
+  }
+  // 未来版本继续在此按 version 逐级升级（迁移必须逐级，不能跳级判断）
+  if (cur.version !== RUN_VERSION) return null;
+  return cur;
 }

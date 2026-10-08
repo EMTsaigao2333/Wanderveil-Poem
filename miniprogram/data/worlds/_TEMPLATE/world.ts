@@ -30,9 +30,17 @@ export const worldMeta: WorldMeta = {
   ],
   // 专属标签池：本世界特有的状态标记，结局判定与检索用
   specialTags: ['<专属标签1>', '<专属标签2>'],
-  // 死亡原因文案池：key 为标签名，引擎判定死亡时取用
+  // 死亡原因文案池（分池结构，解析顺序 byCause → byAttr → age → default）
+  // byCause：事件写明的死因 key；byAttr：属性耗尽时是哪一项；age：寿终；default：兜底（必填）
   deathCauses: {
-    '<相关标签>': '<死因文案>',
+    byCause: {
+      '<死因 key>': '<死因文案>',
+    },
+    byAttr: {
+      vitality: '<行力耗尽>', // heart6 / roulette
+      constitution: '<体质耗尽>', // classic5
+    },
+    age: '<寿终文案>',
     default: '<通用死因文案>',
   },
 };

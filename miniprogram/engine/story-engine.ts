@@ -11,6 +11,7 @@
 import type {
   Choice,
   Condition,
+  Debuff,
   Effects,
   LifeEvent,
   Outcome,
@@ -18,7 +19,7 @@ import type {
   WorldMeta,
   WorldPack,
 } from './schema';
-import { resolveStageRange, stageOfAge, shouldTimeDrift } from './schema';
+import { LETHAL_CAP, resolveStageRange, stageOfAge, shouldTimeDrift } from './schema';
 import type { AttrSystem } from '../data/attributes';
 import {
   ATTR_SYSTEMS,
@@ -131,6 +132,10 @@ export function isConditionMet(
   if (cond.notTags && cond.notTags.some((t) => state.tags.includes(t))) return false;
   if (cond.caps && !cond.caps.every((c) => state.caps.includes(c))) return false;
   if (cond.notCaps && cond.notCaps.some((c) => state.caps.includes(c))) return false;
+  // 金钱门槛（09 文档审查补充）：买不起就选不了 —— 之前 Condition 没有任何金钱条件，负资产照样可选、照样扣款
+  if (cond.money) {
+    if (state.money < cond.money[0] || state.money > cond.money[1]) return false;
+  }
   if (cond.chance !== undefined && rng && rng() >= cond.chance) return false;
   if (cond.all && !cond.all.every((c) => isConditionMet(c, state, _meta, rng))) return false;
   if (cond.any && !cond.any.some((c) => isConditionMet(c, state, _meta, rng))) return false;
@@ -151,10 +156,18 @@ export interface CheckOutcome {
   result: 'crit' | 'success' | 'fail' | 'critFail';
 }
 
+/** 伤势带来的检定修正合计（09 文档 §5.2 的 checkPenalty，负值） */
+export function debuffPenalty(state: RunState): number {
+  let sum = 0;
+  for (const d of state.debuffs ?? []) sum += d.checkPenalty ?? 0;
+  return sum;
+}
+
 /** 掷 1d20 + floor(属性/2) ≥ DC 即成功；骰面 20 大成功、骰面 1 大失败 */
 export function rollCheck(state: RunState, attr: SemanticAttr, dc: number, rng: Rng): CheckOutcome {
   const dice = 1 + Math.floor(rng() * CHECK_RULE.dice);
-  const mod = Math.floor(semanticValue(state, attr) / CHECK_RULE.modDivisor);
+  // 伤势修正计入加值（只影响成败判定，不影响大成功 / 大失败的骰面判定）
+  const mod = Math.floor(semanticValue(state, attr) / CHECK_RULE.modDivisor) + debuffPenalty(state);
   const total = dice + mod;
   const result: CheckOutcome['result'] =
     dice >= CHECK_RULE.critSuccess
@@ -189,6 +202,9 @@ function critValue(v: number, favor: boolean): number {
 export function amplifyEffects(effects: Effects | undefined, favor: boolean): Effects | undefined {
   if (!effects) return undefined;
   const out: Effects = { ...effects };
+  // 代价（Outcome.cost）不参与 ×1.5 / ×0.5 缩放（10 文档 §2.5 第 4 条）：
+  // cost 是 Outcome 的字段，这里排除是为了防止调用方把整个 Outcome 传进来
+  if ('cost' in out) delete (out as Record<string, unknown>).cost;
   if (effects.attr) {
     const attr: Partial<Record<SemanticAttr, number>> = {};
     for (const [k, v] of Object.entries(effects.attr) as [SemanticAttr, number][]) {
@@ -237,8 +253,8 @@ function strengthen(text: string | undefined, result: CheckOutcome['result']): s
 /* 二期接入本地 AI 后，用 setDeathNarrator 替换文案生成（接口已就位）      */
 /* ------------------------------------------------------------------ */
 
-/** 死因来源：事件写明 / 属性耗尽 / 寿终 */
-export type DeathKind = 'event' | 'attr' | 'age';
+/** 死因来源：事件写明 / 属性耗尽 / 事故（failLethal 命中）/ 寿终 */
+export type DeathKind = 'event' | 'attr' | 'hazard' | 'age';
 
 export interface DeathContext {
   kind: DeathKind;
@@ -265,9 +281,30 @@ export function setDeathNarrator(fn: DeathNarrator | null): void {
   deathNarrator = fn;
 }
 
-/** 死因文案：先按死因 key 查世界文案池，查不到就用原文 */
+/**
+ * 死因文案：先按死因 key 查世界文案池的 byCause，查不到就用原文（事件可能直接写明整句）。
+ * 分池解析的完整顺序见 poolDeathText()。
+ */
 export function deathText(meta: WorldMeta, cause: string): string {
-  return meta.deathCauses?.[cause] ?? cause;
+  return meta.deathCauses?.byCause?.[cause] ?? cause;
+}
+
+/**
+ * 按 09 文档第 5 项的顺序在死因池里查文案：byCause → byAttr → age → default。
+ * 查不到任何命中时返回 undefined，由调用方决定兜底句。
+ */
+export function poolDeathText(
+  meta: WorldMeta,
+  kind: DeathKind,
+  cause?: string,
+  attrKey?: string,
+): string | undefined {
+  const pool = meta.deathCauses;
+  if (!pool) return undefined;
+  if (cause && pool.byCause?.[cause]) return pool.byCause[cause];
+  if (attrKey && pool.byAttr?.[attrKey]) return pool.byAttr[attrKey];
+  if (kind === 'age' && pool.age) return pool.age;
+  return pool.default;
 }
 
 /** 死亡的统一出口：先问本地 AI，没有再退回兜底文案 */
@@ -335,6 +372,9 @@ export function applyEffects(state: RunState, effects: Effects | undefined, pack
   if (effects.gainTraits) {
     for (const id of effects.gainTraits) gainTrait(state, pool, id);
   }
+  if (effects.debuff) {
+    for (const d of effects.debuff) applyDebuff(state, d);
+  }
   if (effects.death) {
     state.status = 'dead';
     state.deathCause = resolveDeath(state, meta, {
@@ -343,6 +383,51 @@ export function applyEffects(state: RunState, effects: Effects | undefined, pack
       fallback: deathText(meta, effects.death),
     });
   }
+}
+
+/**
+ * 挂上一条伤势 / 病根（09 文档 §5.2）。
+ * 同 id 已持有则不重复挂（避免多次失败把同一条伤势叠成无解）。
+ */
+export function applyDebuff(state: RunState, d: Debuff): boolean {
+  if (!state.debuffs) state.debuffs = [];
+  if (state.debuffs.some((x) => x.id === d.id)) return false;
+  state.debuffs.push({ ...d });
+  return true;
+}
+
+/** 移除一条伤势（供后续「休养 / 手术」类事件调用） */
+export function cureDebuff(state: RunState, id: string): boolean {
+  if (!state.debuffs) return false;
+  const before = state.debuffs.length;
+  state.debuffs = state.debuffs.filter((d) => d.id !== id);
+  return state.debuffs.length !== before;
+}
+
+/**
+ * 伤势每年结算一次（09 文档 §5.2，挂在 advanceTime 的逐年循环里）：
+ * ① perYear 的属性流失（走与 TIME_DRIFT 相同的叠加通道，允许小数）
+ * ② 扣 costPerYear（治疗费 / 药费）
+ * ③ 年数递减，到期移除；permanent 的永不自然痊愈
+ */
+export function settleDebuffs(state: RunState): void {
+  if (!state.debuffs || state.debuffs.length === 0) return;
+  const kept: Debuff[] = [];
+  for (const d of state.debuffs) {
+    if (d.perYear) {
+      for (const [k, v] of Object.entries(d.perYear) as [SemanticAttr, number][]) {
+        if (v !== 0) addSemanticAttr(state, k, v, true);
+      }
+    }
+    if (d.costPerYear) state.money -= d.costPerYear;
+    if (d.permanent) {
+      kept.push(d);
+      continue;
+    }
+    const left = (d.years ?? 1) - 1;
+    if (left > 0) kept.push({ ...d, years: left });
+  }
+  state.debuffs = kept;
 }
 
 /** 给六维加上一条特质的偏移（仅六维 / 全随机系统生效） */
@@ -566,6 +651,7 @@ export function advanceTime(state: RunState, pack: WorldPack, years?: number): v
   for (let i = 0; i < n; i++) {
     state.age += 1;
     if (drift) applyDrift(state);
+    settleDebuffs(state);
   }
   state.stage = stageOfAge(state.age, range) ?? state.stage;
 }
@@ -598,18 +684,24 @@ export function advanceChapter(state: RunState, meta: WorldMeta): void {
 /* 终局判定                                                           */
 /* ------------------------------------------------------------------ */
 
-/** 属性跌破阈值 / 年龄超出上限 / 剧情完结 → 结束这一局 */
+/**
+ * 属性跌破阈值 / 年龄超出上限 → 结束这一局。
+ * ⚠ 只有 `fatal: true` 的属性归零才等于死亡（09 文档 §3）：
+ * 六维系统只有行力（vitality）一条生死线，classic5 只有体质（constitution）。
+ * 非致命属性归零不再判死（此前会出现「家境=0 穷死」「颜值=0 丑死」）。
+ */
 export function checkEnd(state: RunState, pack: WorldPack): void {
   if (state.status !== 'playing') return;
   const meta = pack.meta;
   const system = ATTR_SYSTEMS[state.attrSystem];
   for (const def of system.attrs) {
+    if (!def.fatal) continue;
     if ((state.attrs[def.key] ?? 0) <= DEATH_THRESHOLD) {
       state.status = 'dead';
       state.deathCause = resolveDeath(state, meta, {
         kind: 'attr',
         attrKey: def.key,
-        fallback: meta.deathCauses?.default ?? '你的人生走到了尽头。',
+        fallback: poolDeathText(meta, 'attr', undefined, def.key) ?? '你的人生走到了尽头。',
       });
       return;
     }
@@ -620,7 +712,7 @@ export function checkEnd(state: RunState, pack: WorldPack): void {
       state.status = 'dead';
       state.deathCause = resolveDeath(state, meta, {
         kind: 'age',
-        fallback: `寿终正寝。你活了 ${state.age} 年。`,
+        fallback: poolDeathText(meta, 'age') ?? `寿终正寝。你活了 ${state.age} 年。`,
       });
     }
   }
@@ -789,6 +881,7 @@ export function submitChoice(
   if (!choice) {
     return { state, event, choices, ended: state.status !== 'playing' };
   }
+  const meta = pack.meta;
   const rng = rngFor(state, `roll:${event.id}:${choiceIndex}`);
   const entry: HistoryEntry = {
     age: state.age,
@@ -798,14 +891,21 @@ export function submitChoice(
   };
 
   let effects: Effects | undefined;
+  let cost: Effects | undefined;
   let next: string | undefined;
+  let checkResult: CheckOutcome['result'] | undefined;
   if (choice.check) {
     const outcome = rollCheck(state, choice.check.attr, choice.check.dc, rng);
     entry.checkResult = outcome.result;
     entry.dice = [outcome.dice, outcome.mod];
+    checkResult = outcome.result;
     const branch = resolveOutcome(choice, outcome.result);
     effects = branch.effects;
     next = branch.next;
+    // 「成功但有代价」（10 文档 §2.5）：大成功时若声明了 costUnless 则免除
+    if (branch.cost && !(branch.costUnless === 'critSuccess' && outcome.result === 'crit')) {
+      cost = branch.cost;
+    }
     entry.text = strengthen(branch.text, outcome.result);
   } else {
     effects = choice.effects;
@@ -813,11 +913,27 @@ export function submitChoice(
   }
 
   applyEffects(state, effects, pack);
+  // cost 与 effects 同一次结算，顺序不能反：先收益后代价（代价要看到收益后的状态）
+  if (cost) applyEffects(state, cost, pack);
   entry.effects = effects;
+  if (cost) entry.cost = cost;
   pushHistory(state, entry);
   if (next) state.pendingNext = next;
 
-  // 当场死亡（事件写明的死因）就不再推进时间：时间停在死的那一年
+  // 事故致死（09 文档 §4）：**普通失败**结算后按 failLethal 二次判定，命中则当场结束人生。
+  // 只对 fail 分支生效——大失败走作者写死的 critFail 分支，安全选项缺省不致死。
+  if (state.status === 'playing' && checkResult === 'fail' && choice.failLethal) {
+    const p = Math.min(Math.max(choice.failLethal, 0), LETHAL_CAP);
+    if (rngFor(state, `lethal:${event.id}:${choiceIndex}`)() < p) {
+      state.status = 'dead';
+      state.deathCause = resolveDeath(state, meta, {
+        kind: 'hazard',
+        fallback: poolDeathText(meta, 'hazard') ?? '你的人生走到了尽头。',
+      });
+    }
+  }
+
+  // 当场死亡（事件写明的死因 / 事故致死）就不再推进时间：时间停在死的那一年
   if (state.status === 'playing') {
     settlePsyche(state, getTraitPool(pack.meta.traitPoolId ?? pack.meta.id), rngFor(state, `psyche:${event.id}`));
     advanceTime(state, pack, event.years);

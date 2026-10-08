@@ -79,6 +79,40 @@ export const DC = {
   extreme: 19,
 } as const;
 
+/**
+ * 事故危险等级（09 文档 §4.2）：决定普通失败的严重度与是否可能致死。
+ * none 日常 / low 挨揍熬夜 / mid 械斗手术 / high 坠落车祸 / lethal 机器爆炸
+ */
+export type HazardLevel = 'none' | 'low' | 'mid' | 'high' | 'lethal';
+
+/**
+ * 大失败致死率上限（09 文档 §4.3 第 1 条）：
+ * 即使是 `lethal` 等级，也不允许「大失败必死」——必死会让 slider 式的人生没有喘息空间。
+ */
+export const LETHAL_CAP = 0.35;
+
+/**
+ * 伤势 / 病根（09 文档 §5.2）——失败的第一档代价。
+ * 与「一次性扣属性」不同：它每一年都在咬属性 / 扣钱，玩家必须主动处理才能止血。
+ */
+export interface Debuff {
+  id: string;
+  /** 持续年数；与 permanent 二选一 */
+  years?: number;
+  /** 永久伤势（不可自然痊愈，只能靠特定事件移除） */
+  permanent?: boolean;
+  /** 生效期内的语义属性年变化（允许小数，走与 TIME_DRIFT 相同的叠加通道） */
+  perYear?: Partial<Record<SemanticAttr, number>>;
+  /** 生效期内的检定修正（负值） */
+  checkPenalty?: number;
+  /** 每年扣钱（治疗费 / 药费） */
+  costPerYear?: number;
+  /** 展示文案（心理状态量面板旁显示，如「肋骨未愈 · 还剩 2 年」） */
+  label: string;
+  /** 可移除它的方式（供作者与 AI 参考，引擎不强制） */
+  cure?: 'rest' | 'money' | 'surgery' | 'none';
+}
+
 /** 属性/标签/金钱等变化集合 */
 export interface Effects {
   /** 语义属性增减，例：{ perception: 2, mood: -1 } */
@@ -103,6 +137,8 @@ export interface Effects {
   gainCaps?: string[];
   /** 失去能力标签 */
   loseCaps?: string[];
+  /** 挂上伤势 / 病根（09 文档 §5.2）；已持有同 id 的不重复挂 */
+  debuff?: Debuff[];
 }
 
 /** 属性检定配置：掷 1d20 + 属性修正（floor(属性/2)）≥ dc 即成功；骰面 20 大成功，骰面 1 大失败 */
@@ -131,9 +167,11 @@ export interface Condition {
   caps?: string[];
   /** 需不持有任何能力标签 */
   notCaps?: string[];
-  /** 事件来源过滤：只从指定来源的事件中抽取（06 文档 2.3） */
+  /** 金钱区间 [下限, 上限]（闭区间）——「买不起就选不了」；缺省不判 */
+  money?: [number, number];
+  /** 事件来源过滤：只从指定来源的事件中抽取（06 文档 2.3）【已实现】 */
   sources?: EventSource[];
-  /** 入池权重下限（低于该值的事件不被抽中，06 文档 2.3） */
+  /** 入池权重下限（低于该值的事件不被抽中，06 文档 2.3）【已实现，数据零使用】 */
   minWeight?: number;
 }
 
@@ -144,6 +182,15 @@ export interface Outcome {
   effects?: Effects;
   /** 跳转到指定事件 id（省略则回到事件池继续推演） */
   next?: string;
+  /**
+   * 这一次结果的「代价」（10 文档 §2）：与 effects 同时结算。
+   * success.cost = 成功但有代价（人生取舍）
+   * fail.cost    = 失败的额外代价（等价于直接写进 fail.effects，留作显式表达）
+   * ⚠ 代价是作者写死的因果，**不参与大成功 / 大失败的 ×1.5 / ×0.5 缩放**。
+   */
+  cost?: Effects;
+  /** 代价的免除条件：填 'critSuccess' 表示大成功时免除（你两边都保住了） */
+  costUnless?: 'critSuccess';
 }
 
 /** 玩家选项 */
@@ -161,13 +208,24 @@ export interface Choice {
   critSuccess?: Outcome;
   /** 大失败分支：省略时引擎对 fail 结果做数值强化；重点选项可在此写 death 直接终结人生 */
   critFail?: Outcome;
+  /**
+   * 「重大变故」：本次选择的风险等级（09 文档 §4）。
+   * 缺省 = 安全（普通失败只造成重伤）。仅对 fail 分支生效。
+   */
+  hazard?: HazardLevel;
+  /**
+   * 这一档事故在**普通失败**下的致死概率 0~1（09 文档 §4.3）。
+   * 引擎在 fail 分支结算后按此概率二次判定，命中则当场结束人生。
+   * ⚠ 只允许写在 `hazard: 'lethal'` 的选项上，且不得超过 0.10（审查规则，引擎按 LETHAL_CAP 兜底）。
+   */
+  failLethal?: number;
   /** 重点选项（关键抉择）：界面高亮为「关键抉择」 */
   major?: boolean;
   /** 无检定选项的确定结果（用于纯叙事型选项） */
   effects?: Effects;
   /** 无检定选项跳转 */
   next?: string;
-  /** 该选项允许玩家自由输入线路（自定义选项入口，P2 见 06 文档） */
+  /** 该选项允许玩家自由输入线路（自定义选项入口）【仅预留：P2 见 06 文档，引擎零消费】 */
   allowCustomRoute?: boolean;
 }
 
@@ -193,21 +251,37 @@ export interface LifeEvent {
   /** 事件检索标签 */
   tags?: string[];
 
-  // ——— 06 文档 2.1：AI / 玩家线路预留字段（P0 只落类型，不做生成） ———
-  /** 该事件消耗的年数，默认 1，上限 5（04 文档第 5 节） */
+  // ——— 06 文档 2.1：AI / 玩家线路预留字段 ———
+  /** 该事件消耗的年数，默认 1，上限 5（04 文档第 5 节）【已实现，事件库当前零使用】 */
   years?: number;
-  /** 事件来源，默认 'official' */
+  /** 事件来源，默认 'official'【已实现：require.sources / minEventWeight 会读】 */
   source?: EventSource;
-  /** 审查状态，默认 'none'；official 事件无需审查 */
+  /** 审查状态，默认 'none'；official 事件无需审查【仅预留，引擎零消费】 */
   reviewStatus?: ReviewStatus;
-  /** 由哪一局生成（溯源用） */
+  /** 由哪一局生成（溯源用）【仅预留，引擎零消费】 */
   originRunId?: string;
-  /** AI 判定的离谱度 0~1（0 = 完全合理） */
+  /** AI 判定的离谱度 0~1（0 = 完全合理）【仅预留，引擎零消费】 */
   absurdity?: number;
-  /** AI 判定的趣味度 0~1 */
+  /** AI 判定的趣味度 0~1【仅预留，引擎零消费】 */
   interest?: number;
-  /** 玩家提出的原始线路文本（溯源 / 审查展示用） */
+  /** 玩家提出的原始线路文本（溯源 / 审查展示用）【仅预留，引擎零消费】 */
   playerInput?: string;
+}
+
+/**
+ * 死亡原因文案池（09 文档 §4，2026-10-08 由 Record<string,string> 改为分池结构）。
+ * 解析顺序：byCause（事件写明的死因 key）→ byAttr（属性耗尽时是哪一项）→ age（寿终）→ default。
+ * 只有一个 default 是必填的——其余三池按世界需要补，缺省即落到 default。
+ */
+export interface DeathCausePool {
+  /** 按属性 key（classic5 的 constitution / heart6 的 vitality 等） */
+  byAttr?: Record<string, string>;
+  /** 按事件写明的死因 key */
+  byCause?: Record<string, string>;
+  /** 寿终（年龄超出阶段上限） */
+  age?: string;
+  /** 兜底句 */
+  default: string;
 }
 
 /** 开局背景包（roll 出来的出身词条，跑团系统下替代外貌 / 家境属性） */
@@ -235,12 +309,12 @@ export interface WorldMeta {
   attrSystems: AttrSystemId[];
   /** 开局背景包 */
   backgrounds: BackgroundPack[];
-  /** 专属标签池（结局判定与检索用） */
+  /** 专属标签池（结局判定与检索用）【仅预留：引擎 0 处读取】 */
   specialTags?: string[];
-  /** 世界专属资源名（如「信用点」） */
+  /** 世界专属资源名（如「信用点」）【仅预留：页面目前硬编码，P2 改为读它】 */
   currencyName?: string;
-  /** 死亡原因文案池：{ 死因标签: 文案 } */
-  deathCauses?: Record<string, string>;
+  /** 死亡原因文案池（分池结构，解析顺序见 DeathCausePool） */
+  deathCauses?: DeathCausePool;
 
   // ——— 04 文档：人生模型与多风格扩展 ———
   /** 人生模型，每个世界声明一种 */
@@ -255,7 +329,7 @@ export interface WorldMeta {
   stages?: Partial<Record<Stage, [number, number]>>;
   /** 时间漂移开关；episodic 缺省关闭（04 文档 5.1），full 缺省开启 */
   timeDrift?: boolean;
-  /** 该世界推荐的美术风格（多风格切换系统的「适配模式」用） */
+  /** 该世界推荐的美术风格（多风格切换系统的「适配模式」用）【仅预留，引擎零消费】 */
   recommendedStyles?: string[];
   /** 全随机模式的特质池 id；省略则按世界 id 取池 */
   traitPoolId?: string;
