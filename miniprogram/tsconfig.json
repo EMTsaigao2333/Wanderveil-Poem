@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    // 微信官方 typings（miniprogram-api-typings 2.8.x）在较新 tsc 下会报 IAnyObject 约束错误，
+    // 属于第三方声明文件问题，跳过对 .d.ts 的检查
+    "skipLibCheck": true,
+    "typeRoots": [
+      "../typings"
+    ]
+  },
+  "include": [
+    "./**/*.ts",
+    "../typings/**/*.d.ts"
+  ]
+}

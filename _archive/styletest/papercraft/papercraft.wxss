@@ -1,0 +1,136 @@
+/* ===== 纸艺拼贴：分层卡纸 · 剪切边缘 · 柔和层间投影 ===== */
+.page {
+  min-height: 100vh;
+  background-color: #fff8e7;
+  background-image: repeating-linear-gradient(0deg, rgba(87, 60, 20, 0.02) 0 2rpx, transparent 2rpx 8rpx);
+  padding: 24rpx 28rpx 40rpx;
+  box-sizing: border-box;
+  font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+/* 顶部工具条 */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 26rpx;
+}
+.badge {
+  background: #2ec4b6;
+  color: #fff8e7;
+  font-size: 20rpx;
+  font-weight: 700;
+  letter-spacing: 2rpx;
+  padding: 10rpx 20rpx;
+  border-radius: 4rpx 14rpx 6rpx 12rpx;
+  transform: rotate(-2deg);
+  box-shadow: 0 4rpx 8rpx rgba(87, 60, 20, 0.2);
+}
+.stat { font-size: 22rpx; color: #9b8461; font-weight: 600; }
+
+/* 列表项：错位圆角卡纸 + 第二层纸片投影 */
+.item {
+  display: flex;
+  background: #fffdf6;
+  border-radius: 8rpx 26rpx 10rpx 30rpx;
+  box-shadow: 10rpx 12rpx 0 -2rpx var(--c2), 0 10rpx 22rpx rgba(87, 60, 20, 0.16);
+  margin-bottom: 40rpx;
+  overflow: hidden;
+  transform: rotate(var(--rot, 0deg));
+}
+
+/* 左侧视觉块：彩纸底 + 剪纸图形 */
+.visual {
+  position: relative;
+  width: 216rpx;
+  min-height: 224rpx;
+  flex-shrink: 0;
+  background: var(--c1);
+  overflow: hidden;
+}
+.shape { position: absolute; }
+/* 撕纸大色块（不规则圆角纸片） */
+.shape-a {
+  left: -22%;
+  top: -20%;
+  width: 150%;
+  height: 78%;
+  background: rgba(255, 253, 246, 0.3);
+  border-radius: 45% 55% 62% 38% / 52% 44% 56% 48%;
+}
+/* 缝线打孔圆 */
+.shape-b {
+  right: 12%;
+  bottom: 20%;
+  width: 68rpx;
+  height: 68rpx;
+  border: 4rpx dashed rgba(255, 253, 246, 0.9);
+  border-radius: 50%;
+  background: rgba(255, 253, 246, 0.16);
+}
+/* 底部锯齿剪切边 */
+.shape-c {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 16rpx;
+  background:
+    linear-gradient(45deg, #fffdf6 50%, transparent 50%),
+    linear-gradient(-45deg, #fffdf6 50%, transparent 50%);
+  background-size: 18rpx 16rpx;
+  background-repeat: repeat-x;
+}
+
+/* 变体：换纸色 / 胶带色 / 微倾角 */
+.v0 { --c1: #ff6b6b; --c2: #2ec4b6; --tape: rgba(46, 196, 182, 0.45); --hl: rgba(255, 107, 107, 0.26); --rot: -0.6deg; }
+.v1 { --c1: #2ec4b6; --c2: #ffb703; --tape: rgba(255, 183, 3, 0.5); --hl: rgba(46, 196, 182, 0.26); --rot: 0.8deg; }
+.v2 { --c1: #ffb703; --c2: #ff6b6b; --tape: rgba(255, 107, 107, 0.4); --hl: rgba(255, 183, 3, 0.3); --rot: -0.4deg; }
+.v3 { --c1: #8ecae6; --c2: #fb8500; --tape: rgba(251, 133, 0, 0.4); --hl: rgba(142, 202, 230, 0.32); --rot: 0.6deg; }
+.v4 { --c1: #a3b18a; --c2: #e9d8a6; --tape: rgba(233, 216, 166, 0.6); --hl: rgba(163, 177, 138, 0.3); --rot: -0.9deg; }
+.v5 { --c1: #cdb4db; --c2: #ff758f; --tape: rgba(255, 117, 143, 0.4); --hl: rgba(205, 180, 219, 0.34); --rot: 0.5deg; }
+
+/* 右侧信息 */
+.info { flex: 1; padding: 24rpx 26rpx; min-width: 0; }
+.title {
+  display: inline-block;
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #4a3f2e;
+  margin-bottom: 14rpx;
+  background: linear-gradient(transparent 60%, var(--hl) 0);
+}
+.meta {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 8rpx;
+}
+/* 打孔圆点 */
+.tick {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background: #efe4cd;
+  box-shadow: inset 0 2rpx 4rpx rgba(87, 60, 20, 0.28);
+  margin: 12rpx 12rpx 0 0;
+  flex-shrink: 0;
+}
+.line { font-size: 24rpx; color: #6b5c44; line-height: 1.65; }
+
+/* 标签：半透明和纸胶带 */
+.stamp {
+  display: inline-block;
+  margin-top: 16rpx;
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #54452e;
+  background: var(--tape);
+  padding: 8rpx 26rpx;
+  border-radius: 2rpx;
+  transform: rotate(-2.5deg);
+  box-shadow: 0 2rpx 6rpx rgba(87, 60, 20, 0.16);
+}
+
+/* 底部状态 */
+.footer { text-align: center; padding: 20rpx 0 8rpx; }
+.footer text { font-size: 24rpx; color: #9b8461; font-weight: 600; white-space: pre-line; }
+.footer .err { color: #e07a5f; font-weight: 800; }

@@ -1,0 +1,319 @@
+/* 开局向导：与人生页同一套冷色主题 */
+
+page {
+  background: #0b0f14;
+}
+
+.wrap {
+  min-height: 100vh;
+  padding: 32rpx 28rpx 80rpx;
+  background: #0b0f14;
+  color: #cfd8e3;
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 28rpx;
+  line-height: 1.6;
+}
+
+.steps {
+  font-size: 22rpx;
+  color: #5d7286;
+  letter-spacing: 2rpx;
+}
+
+.logo {
+  margin-top: 90rpx;
+  font-size: 60rpx;
+  letter-spacing: 8rpx;
+  color: #e8f3ff;
+}
+
+.logo-sub {
+  margin: 8rpx 0 60rpx;
+  font-size: 26rpx;
+  color: #5d7286;
+  letter-spacing: 2rpx;
+}
+
+.section-label {
+  margin: 36rpx 0 16rpx;
+  font-size: 24rpx;
+  color: #5d7286;
+  letter-spacing: 2rpx;
+}
+
+/* —— 世界卡 / 系统卡 —— */
+.card,
+.sys {
+  margin-bottom: 16rpx;
+  padding: 22rpx 24rpx;
+  border: 2rpx solid #1d2734;
+  border-radius: 12rpx;
+  background: #10161e;
+}
+
+.card-on,
+.sys-on {
+  border-color: #35c6d8;
+  background: #0e1d24;
+}
+
+.card-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 30rpx;
+  color: #e8f3ff;
+}
+
+.card-tag {
+  font-size: 22rpx;
+  color: #5d7286;
+}
+
+.card-text {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: #7b8fa3;
+}
+
+.opening {
+  margin-top: 16rpx;
+  padding: 18rpx 20rpx;
+  border-left: 4rpx solid #35c6d8;
+  border-radius: 0 8rpx 8rpx 0;
+  background: #0c141c;
+  font-size: 24rpx;
+  color: #a8b6c4;
+}
+
+.sys-name {
+  font-size: 30rpx;
+  color: #e8f3ff;
+}
+
+.sys-brief {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: #7b8fa3;
+}
+
+/* —— 内容偏好面板 —— */
+.prefs-head {
+  margin-top: 24rpx;
+  font-size: 26rpx;
+  color: #b9c6d4;
+}
+
+.prefs-meta {
+  margin: 10rpx 0 8rpx;
+  font-size: 22rpx;
+  color: #5d7286;
+}
+
+.pgroup {
+  margin-top: 20rpx;
+  padding: 18rpx 20rpx;
+  border: 2rpx solid #1d2734;
+  border-radius: 12rpx;
+  background: #10161e;
+}
+
+.pgroup-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10rpx;
+  border-bottom: 2rpx solid #161e28;
+}
+
+.pgroup-name {
+  font-size: 28rpx;
+  color: #e8f3ff;
+}
+
+.pgroup-toggle {
+  padding: 6rpx 18rpx;
+  border: 2rpx solid #1d2734;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+  color: #35c6d8;
+}
+
+.pitem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14rpx 4rpx;
+  border-bottom: 2rpx solid #121a22;
+}
+
+.pitem-on .pitem-name {
+  color: #e8f3ff;
+}
+
+.pitem-name {
+  font-size: 26rpx;
+  color: #7b8fa3;
+}
+
+.pitem-mark {
+  font-size: 22rpx;
+  color: #5d7286;
+}
+
+.pitem-on .pitem-mark {
+  color: #35c6d8;
+}
+
+/* —— 抽取动画 —— */
+.brow {
+  display: flex;
+  align-items: baseline;
+  padding: 16rpx 4rpx;
+  border-bottom: 2rpx solid #121a22;
+  opacity: 0.35;
+}
+
+.brow-done {
+  opacity: 1;
+}
+
+.brow-name {
+  width: 160rpx;
+  flex-shrink: 0;
+  font-size: 24rpx;
+  color: #5d7286;
+}
+
+.brow-text {
+  flex: 1;
+  font-size: 26rpx;
+  color: #cfd8e3;
+}
+
+/* —— 人物卡 —— */
+.crow {
+  display: flex;
+  padding: 14rpx 4rpx;
+  border-bottom: 2rpx solid #121a22;
+}
+
+.crow-name {
+  width: 160rpx;
+  flex-shrink: 0;
+  font-size: 24rpx;
+  color: #5d7286;
+}
+
+.crow-text {
+  flex: 1;
+  font-size: 26rpx;
+  color: #cfd8e3;
+}
+
+.slotlist {
+  margin-top: 14rpx;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.slot {
+  margin: 0 14rpx 14rpx 0;
+  padding: 12rpx 22rpx;
+  border: 2rpx solid #35c6d8;
+  border-radius: 10rpx;
+  font-size: 24rpx;
+  color: #35c6d8;
+}
+
+/* —— 属性条 —— */
+.attr {
+  display: flex;
+  align-items: center;
+  height: 40rpx;
+}
+
+.attr-name {
+  width: 96rpx;
+  font-size: 24rpx;
+  color: #7b8fa3;
+}
+
+.attr-track {
+  flex: 1;
+  height: 10rpx;
+  margin: 0 14rpx;
+  border-radius: 6rpx;
+  background: #161e28;
+  overflow: hidden;
+}
+
+.attr-fill {
+  height: 100%;
+  background: #35c6d8;
+}
+
+.attr-value {
+  width: 70rpx;
+  text-align: right;
+  font-size: 24rpx;
+  color: #cfd8e3;
+}
+
+/* —— 起名 —— */
+.name-input {
+  margin-top: 10rpx;
+  padding: 20rpx 22rpx;
+  border: 2rpx solid #1d2734;
+  border-radius: 12rpx;
+  background: #10161e;
+  color: #e8f3ff;
+  font-size: 30rpx;
+}
+
+/* —— 通用 —— */
+.btn-main {
+  margin-top: 44rpx;
+  background: #35c6d8;
+  color: #04141a;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+}
+
+.btn-ghost {
+  margin-top: 18rpx;
+  background: transparent;
+  color: #7b8fa3;
+  border: 2rpx solid #1d2734;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+}
+
+.note {
+  margin-top: 20rpx;
+  font-size: 24rpx;
+  color: #d8835a;
+}
+
+.savebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 30rpx;
+  font-size: 22rpx;
+  color: #5d7286;
+}
+
+.savebar-btn {
+  padding: 8rpx 18rpx;
+  border: 2rpx solid #1d2734;
+  border-radius: 8rpx;
+  color: #7b8fa3;
+}
+
+.backbtn {
+  margin-top: 48rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #5d7286;
+}

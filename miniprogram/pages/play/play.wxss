@@ -1,0 +1,335 @@
+/* 人生引擎页（最小可测版）：冷色调、信息优先，先把引擎跑起来 */
+
+/* 基础样式挂在 .wrap 上：Skyline 渲染引擎下 page 选择器不可靠，class 才是稳的 */
+page {
+  background: #0b0f14;
+}
+
+.wrap {
+  min-height: 100vh;
+  padding: 32rpx 28rpx 80rpx;
+  background: #0b0f14;
+  color: #cfd8e3;
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 28rpx;
+  line-height: 1.6;
+}
+
+/* —— 开始 —— */
+.logo {
+  margin-top: 90rpx;
+  font-size: 60rpx;
+  letter-spacing: 8rpx;
+  color: #e8f3ff;
+}
+
+.logo-sub {
+  margin: 8rpx 0 60rpx;
+  font-size: 26rpx;
+  color: #5d7286;
+  letter-spacing: 2rpx;
+}
+
+.section-label {
+  margin: 36rpx 0 16rpx;
+  font-size: 24rpx;
+  color: #5d7286;
+  letter-spacing: 2rpx;
+}
+
+.sys {
+  margin-bottom: 16rpx;
+  padding: 22rpx 24rpx;
+  border: 2rpx solid #1d2734;
+  border-radius: 12rpx;
+  background: #10161e;
+}
+
+.sys-on {
+  border-color: #35c6d8;
+  background: #0e1d24;
+}
+
+.sys-name {
+  font-size: 30rpx;
+  color: #e8f3ff;
+}
+
+.sys-brief {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: #7b8fa3;
+}
+
+.btn-main {
+  margin-top: 44rpx;
+  background: #35c6d8;
+  color: #04141a;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+}
+
+.btn-ghost {
+  margin-top: 18rpx;
+  background: transparent;
+  color: #7b8fa3;
+  border: 2rpx solid #1d2734;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+}
+
+.note {
+  margin-top: 20rpx;
+  font-size: 24rpx;
+  color: #d8835a;
+}
+
+.savebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 30rpx;
+  font-size: 22rpx;
+  color: #5d7286;
+}
+
+.savebar-btn {
+  padding: 8rpx 18rpx;
+  border: 2rpx solid #1d2734;
+  border-radius: 8rpx;
+  color: #7b8fa3;
+}
+
+/* —— 人生 —— */
+.hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 12rpx;
+  border-bottom: 2rpx solid #161e28;
+}
+
+.hud-age {
+  font-size: 32rpx;
+  color: #e8f3ff;
+}
+
+.hud-money {
+  font-size: 24rpx;
+  color: #7b8fa3;
+}
+
+.hud-card {
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  color: #6f8496;
+}
+
+.attrs {
+  margin: 24rpx 0 8rpx;
+}
+
+.attr {
+  display: flex;
+  align-items: center;
+  height: 40rpx;
+}
+
+.attr-name {
+  width: 96rpx;
+  font-size: 24rpx;
+  color: #7b8fa3;
+}
+
+.attr-track {
+  flex: 1;
+  height: 10rpx;
+  margin: 0 14rpx;
+  border-radius: 6rpx;
+  background: #161e28;
+  overflow: hidden;
+}
+
+.attr-fill {
+  height: 100%;
+  background: #35c6d8;
+}
+
+.attr-value {
+  width: 70rpx;
+  text-align: right;
+  font-size: 24rpx;
+  color: #cfd8e3;
+}
+
+.event {
+  margin-top: 36rpx;
+  padding: 28rpx 26rpx;
+  border-left: 4rpx solid #35c6d8;
+  background: #10161e;
+  border-radius: 0 12rpx 12rpx 0;
+}
+
+.event-title {
+  margin-bottom: 10rpx;
+  font-size: 30rpx;
+  color: #e8f3ff;
+}
+
+.event-text {
+  font-size: 28rpx;
+  color: #b9c6d4;
+}
+
+.choices {
+  margin-top: 28rpx;
+}
+
+.choice {
+  margin-bottom: 16rpx;
+  padding: 22rpx 24rpx;
+  border: 2rpx solid #1d2734;
+  border-radius: 12rpx;
+  background: #10161e;
+}
+
+.choice-major {
+  border-color: #d8835a;
+}
+
+.choice-label {
+  font-size: 28rpx;
+  color: #e8f3ff;
+}
+
+.choice-check {
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: #7b8fa3;
+}
+
+.result {
+  margin-top: 28rpx;
+  padding: 24rpx;
+  border: 2rpx solid #1d2734;
+  border-radius: 12rpx;
+  background: #0e141c;
+}
+
+.result-check {
+  font-size: 24rpx;
+  color: #35c6d8;
+}
+
+.result-text {
+  margin-top: 12rpx;
+  font-size: 28rpx;
+  color: #cfd8e3;
+}
+
+.result-delta {
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  color: #8fb0a0;
+}
+
+/* 检定掷骰动画 */
+.dice-row {
+  display: flex;
+  align-items: center;
+}
+
+.dice {
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx solid #35c6d8;
+  border-radius: 12rpx;
+  background: #0e1d24;
+  font-size: 40rpx;
+  color: #35c6d8;
+}
+
+.dice-plus {
+  margin: 0 16rpx;
+  font-size: 32rpx;
+  color: #7b8fa3;
+}
+
+.dice-hint {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #5d7286;
+}
+
+@keyframes dicePulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+.dice-anim {
+  animation: dicePulse 0.4s ease-in-out infinite;
+}
+
+.tags {
+  margin-top: 26rpx;
+  font-size: 22rpx;
+  color: #6f8496;
+}
+
+.psyche {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #5d7286;
+}
+
+/* —— 结局 —— */
+.end-title {
+  margin-top: 40rpx;
+  font-size: 40rpx;
+  letter-spacing: 4rpx;
+  color: #e8f3ff;
+}
+
+.end-meta {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #7b8fa3;
+}
+
+.end-cause {
+  margin: 26rpx 0 10rpx;
+  padding: 24rpx;
+  border-left: 4rpx solid #d8835a;
+  background: #141013;
+  border-radius: 0 12rpx 12rpx 0;
+  font-size: 28rpx;
+  color: #e2c9bd;
+}
+
+.timeline {
+  max-height: 900rpx;
+  padding: 8rpx 0;
+}
+
+.tl-row {
+  display: flex;
+  padding: 12rpx 0;
+  border-bottom: 2rpx solid #121a22;
+}
+
+.tl-age {
+  width: 110rpx;
+  flex-shrink: 0;
+  font-size: 22rpx;
+  color: #5d7286;
+}
+
+.tl-text {
+  flex: 1;
+  font-size: 24rpx;
+  color: #a8b6c4;
+}

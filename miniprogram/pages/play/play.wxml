@@ -1,0 +1,114 @@
+<!-- 人生引擎页（最小可测版）：开始 / 人生 / 结局 三段式 -->
+<view class="wrap">
+
+  <!-- ============ 开始 ============ -->
+  <block wx:if="{{phase === 'start'}}">
+    <view class="logo">幻行诗篇</view>
+    <view class="logo-sub">雾港 · 霓虹残响</view>
+
+    <view class="section-label">选择属性系统</view>
+    <view
+      wx:for="{{systems}}"
+      wx:key="id"
+      class="sys {{item.id === systemId ? 'sys-on' : ''}}"
+      bindtap="onPickSystem"
+      data-id="{{item.id}}"
+    >
+      <view class="sys-name">{{item.name}}</view>
+      <view class="sys-brief">{{item.brief}}</view>
+    </view>
+
+    <button class="btn-main" bindtap="onStartNew">开始这一生</button>
+    <button class="btn-ghost" bindtap="onContinueSave">继续上次的人生</button>
+    <view class="savebar">
+      <text class="savebar-text">存档 {{saves}} / {{maxRuns}}</text>
+      <text class="savebar-btn" bindtap="onClearSaves">清空存档</text>
+    </view>
+    <view wx:if="{{note}}" class="note">{{note}}</view>
+  </block>
+
+  <!-- ============ 人生 ============ -->
+  <block wx:elif="{{phase === 'life'}}">
+    <view class="hud">
+      <text class="hud-age">{{run.age}} 岁 · {{stage}}</text>
+      <text class="hud-money">{{run.money}} 信用点</text>
+    </view>
+    <view wx:if="{{card}}" class="hud-card">{{card}}</view>
+
+    <view class="attrs">
+      <view wx:for="{{attrRows}}" wx:key="key" class="attr">
+        <text class="attr-name">{{item.name}}</text>
+        <view class="attr-track"><view class="attr-fill" style="width:{{item.pct}}%"></view></view>
+        <text class="attr-value">{{item.value}}</text>
+      </view>
+    </view>
+
+    <view class="event">
+      <view wx:if="{{view.title}}" class="event-title">{{view.title}}</view>
+      <view class="event-text">{{view.text}}</view>
+    </view>
+
+    <view wx:if="{{result}}" class="result">
+      <view wx:if="{{result.check}}" class="result-check">{{result.check}}</view>
+      <view wx:if="{{result.text}}" class="result-text">{{result.text}}</view>
+      <view wx:if="{{result.delta}}" class="result-delta">{{result.delta}}</view>
+    </view>
+
+    <!-- 检定掷骰动画：数字跳动约 0.8s 后揭示真实结果 -->
+    <view wx:elif="{{diceRolling}}" class="result">
+      <view class="dice-row">
+        <view class="dice dice-anim">{{diceA}}</view>
+        <view class="dice-plus">+</view>
+        <view class="dice">{{diceMod}}</view>
+      </view>
+      <view class="dice-hint">命运骰子滚动中……</view>
+    </view>
+
+    <view wx:if="{{!result && choices.length > 0}}" class="choices">
+      <view
+        wx:for="{{choices}}"
+        wx:key="idx"
+        class="choice {{item.major ? 'choice-major' : ''}}"
+        bindtap="onPick"
+        data-index="{{item.idx}}"
+      >
+        <view class="choice-label">{{item.major ? '【关键抉择】' : ''}}{{item.label}}</view>
+        <view class="choice-check">{{item.checkText}}</view>
+      </view>
+    </view>
+
+    <button wx:if="{{result || view.auto}}" class="btn-main" bindtap="onContinue">
+      {{pendingEnd ? '看这一生的结局' : '继续'}}
+    </button>
+
+    <view wx:if="{{tags}}" class="tags">{{tags}}</view>
+    <view wx:if="{{psyche}}" class="psyche">{{psyche}}</view>
+  </block>
+
+  <!-- ============ 结局 ============ -->
+  <block wx:elif="{{phase === 'end'}}">
+    <view class="end-title">这一生结束了</view>
+    <view class="end-meta">活了 {{run.age}} 年 · 止于{{stage}}</view>
+    <view class="end-cause">{{run.deathCause}}</view>
+
+    <view class="attrs">
+      <view wx:for="{{attrRows}}" wx:key="key" class="attr">
+        <text class="attr-name">{{item.name}}</text>
+        <view class="attr-track"><view class="attr-fill" style="width:{{item.pct}}%"></view></view>
+        <text class="attr-value">{{item.value}}</text>
+      </view>
+    </view>
+
+    <view class="section-label">人生时间线</view>
+    <scroll-view class="timeline" scroll-y>
+      <view wx:for="{{timeline}}" wx:key="key" class="tl-row">
+        <text class="tl-age">{{item.age}} 岁</text>
+        <text class="tl-text">{{item.text}}</text>
+      </view>
+    </scroll-view>
+
+    <button class="btn-main" bindtap="onStartNew">再活一次</button>
+    <button class="btn-ghost" bindtap="onBackToStart">回到开始界面</button>
+  </block>
+
+</view>

@@ -1,0 +1,139 @@
+<!-- 开局向导：选世界 → 属性系统 → 内容偏好 → 抽取 → 人物卡 → 起名 -->
+<view class="wrap">
+
+  <view class="steps">{{stepLabel}} · {{stepName}}</view>
+
+  <!-- ============ 第 1 步：选世界 ============ -->
+  <block wx:if="{{step === 'world'}}">
+    <view class="logo">幻行诗篇</view>
+    <view class="logo-sub">把自己交给一段陌生的人生</view>
+
+    <view class="section-label">选择世界</view>
+    <view
+      wx:for="{{worlds}}"
+      wx:key="id"
+      class="card {{item.id === worldId ? 'card-on' : ''}}"
+      bindtap="onPickWorld"
+      data-id="{{item.id}}"
+    >
+      <view class="card-title">
+        <text>{{item.name}}</text>
+        <text class="card-tag">{{item.model}}</text>
+      </view>
+      <view class="card-text">{{item.brief}}</view>
+      <view wx:if="{{item.id === worldId && worldOpening}}" class="opening">{{worldOpening}}</view>
+    </view>
+
+    <button class="btn-main" disabled="{{!worldId}}" bindtap="onNextFromWorld">下一步</button>
+    <view class="savebar">
+      <text class="savebar-text">存档 {{saves}} / {{maxRuns}}</text>
+      <text class="savebar-btn" bindtap="onClearSaves">清空存档</text>
+    </view>
+    <button class="btn-ghost" bindtap="onContinueFromWizard">继续上次的人生</button>
+    <view wx:if="{{note}}" class="note">{{note}}</view>
+  </block>
+
+  <!-- ============ 第 2 步：选属性系统 ============ -->
+  <block wx:if="{{step === 'system'}}">
+    <view class="section-label">选择属性系统</view>
+    <view
+      wx:for="{{systems}}"
+      wx:key="id"
+      class="sys {{item.id === systemId ? 'sys-on' : ''}}"
+      bindtap="onPickSystem"
+      data-id="{{item.id}}"
+    >
+      <view class="sys-name">{{item.name}}</view>
+      <view class="sys-brief">{{item.brief}}</view>
+    </view>
+  </block>
+
+  <!-- ============ 第 3 步：内容偏好 ============ -->
+  <block wx:if="{{step === 'prefs'}}">
+    <view class="prefs-head">以下内容默认关闭。想让这段人生更有戏剧性，可以按类别或逐条打开。</view>
+    <view class="prefs-meta">已打开 {{prefsCount}} 条</view>
+
+    <view wx:for="{{prefs}}" wx:key="key" class="pgroup">
+      <view class="pgroup-head">
+        <text class="pgroup-name">{{item.name}}</text>
+        <text class="pgroup-toggle" bindtap="onToggleGroup" data-key="{{item.key}}">{{item.allOn ? '全关' : '全开'}}</text>
+      </view>
+      <view
+        wx:for="{{item.items}}"
+        wx:for-item="opt"
+        wx:key="id"
+        class="pitem {{opt.on ? 'pitem-on' : ''}}"
+        bindtap="onToggleItem"
+        data-key="{{item.key}}"
+        data-id="{{opt.id}}"
+      >
+        <text class="pitem-name">{{opt.name}}</text>
+        <text class="pitem-mark">{{opt.on ? '已开' : '关'}}</text>
+      </view>
+    </view>
+
+    <button class="btn-main" bindtap="onGoBuild">{{systemId === 'roulette' ? '转动命运' : '掷出人生'}}</button>
+  </block>
+
+  <!-- ============ 第 4 步：抽取（仅全随机模式） ============ -->
+  <block wx:if="{{step === 'build'}}">
+    <view class="section-label">命运正在洗牌</view>
+    <view wx:for="{{buildRows}}" wx:key="key" class="brow {{item.done ? 'brow-done' : ''}}">
+      <text class="brow-name">{{item.name}}</text>
+      <text class="brow-text">{{item.done ? item.text : '占卜中……'}}</text>
+    </view>
+    <button wx:if="{{building}}" class="btn-ghost" bindtap="onSkipAnim">跳过</button>
+    <button wx:if="{{!building}}" class="btn-main" bindtap="onToCard">看人物卡</button>
+  </block>
+
+  <!-- ============ 第 5 步：人物卡确认 ============ -->
+  <block wx:if="{{step === 'card'}}">
+    <view class="section-label">这个人，就是你</view>
+    <view wx:for="{{cardRows}}" wx:key="name" class="crow">
+      <text class="crow-name">{{item.name}}</text>
+      <text class="crow-text">{{item.text}}</text>
+    </view>
+
+    <view class="section-label">{{systemName}}</view>
+    <view wx:for="{{previewAttrs}}" wx:key="key" class="attr">
+      <text class="attr-name">{{item.name}}</text>
+      <view class="attr-track"><view class="attr-fill" style="width:{{item.pct}}%"></view></view>
+      <text class="attr-value">{{item.value}}</text>
+    </view>
+
+    <block wx:if="{{rerollLeft > 0}}">
+      <button class="btn-ghost" bindtap="onToggleSlotPicker">
+        {{pickingSlot ? '收起' : '改写一次运气（可重抽一个副线）'}}
+      </button>
+      <view wx:if="{{pickingSlot}}" class="slotlist">
+        <view
+          wx:for="{{sideSlots}}"
+          wx:key="slot"
+          class="slot"
+          bindtap="onPickRerollSlot"
+          data-slot="{{item.slot}}"
+        >{{item.name}}</view>
+      </view>
+    </block>
+
+    <button class="btn-main" bindtap="onGoName">就这个人了</button>
+  </block>
+
+  <!-- ============ 第 6 步：起名 ============ -->
+  <block wx:if="{{step === 'name'}}">
+    <view class="section-label">这个人叫什么？</view>
+    <input
+      class="name-input"
+      value="{{name}}"
+      placeholder="起个名字，也可以留空"
+      maxlength="12"
+      bindinput="onNameInput"
+    />
+    <button class="btn-ghost" bindtap="onRandomName">随机一个</button>
+    <button class="btn-main" bindtap="onStartLife">开始这段人生</button>
+    <view wx:if="{{note}}" class="note">{{note}}</view>
+  </block>
+
+  <view wx:if="{{step !== 'world'}}" class="backbtn" bindtap="onBackStep">上一步</view>
+
+</view>

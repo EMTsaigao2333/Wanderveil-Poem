@@ -1,0 +1,17 @@
+<view class="lab">
+  <view class="head">
+    <view class="t1">风格样张实验室</view>
+    <view class="t2">三套候选美术风格 · 数据来自本地 mock 服务器 · 下拉刷新 / 上拉触底分页</view>
+  </view>
+
+  <view class="card" wx:for="{{styles}}" wx:key="key" bindtap="go" data-key="{{item.key}}">
+    <view class="swatches">
+      <view class="sw" wx:for="{{item.colors}}" wx:for-item="c" wx:key="*this" style="background:{{c}}"></view>
+    </view>
+    <view class="name">{{item.name}}</view>
+    <view class="desc">{{item.desc}}</view>
+    <view class="go">进入列表页 →</view>
+  </view>
+
+  <view class="tip">运行前请先启动 mock-server：node mock-server/server.js，并在开发者工具勾选「不校验合法域名」。</view>
+</view>

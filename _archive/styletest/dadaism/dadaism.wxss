@@ -1,0 +1,143 @@
+/* ===== 达达主义：报纸拼贴 · 撕裂毛边 · 硬偏移黑影 · 反排版 ===== */
+.page {
+  min-height: 100vh;
+  background-color: #eae6df;
+  background-image: repeating-linear-gradient(0deg, rgba(26, 26, 26, 0.03) 0 1rpx, transparent 1rpx 8rpx);
+  padding: 24rpx 28rpx 40rpx;
+  box-sizing: border-box;
+  font-family: 'Courier New', 'PingFang SC', 'Microsoft YaHei', monospace;
+}
+
+/* 顶部工具条 */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28rpx;
+}
+/* 橡皮章徽章 */
+.badge {
+  border: 3rpx solid #cc3333;
+  color: #cc3333;
+  font-size: 20rpx;
+  font-weight: 900;
+  letter-spacing: 4rpx;
+  padding: 8rpx 18rpx;
+  border-radius: 6rpx;
+  transform: rotate(-4deg);
+  background: rgba(204, 51, 51, 0.06);
+}
+.stat { font-size: 22rpx; color: #57534a; font-weight: 700; }
+
+/* 列表项：歪斜纸片 + 硬偏移黑影 */
+.item {
+  display: flex;
+  background: #f2efe8;
+  border: 3rpx solid #1a1a1a;
+  box-shadow: 8rpx 10rpx 0 #1a1a1a;
+  margin-bottom: 44rpx;
+  transform: rotate(var(--rot, 0deg));
+}
+
+/* 左侧视觉块：撕裂毛边贴纸 */
+.visual {
+  position: relative;
+  width: 216rpx;
+  min-height: 224rpx;
+  flex-shrink: 0;
+  background: var(--c1);
+  clip-path: polygon(0 6%, 9% 0, 23% 4%, 38% 1%, 55% 5%, 72% 0, 88% 4%, 100% 1%, 100% 93%, 91% 100%, 74% 95%, 56% 99%, 38% 95%, 20% 100%, 6% 96%, 0 100%);
+}
+.shape { position: absolute; }
+/* 报纸网点（半调） */
+.shape-a {
+  left: 8%;
+  top: 8%;
+  width: 58%;
+  height: 42%;
+  background-image: radial-gradient(rgba(26, 26, 26, 0.85) 2rpx, transparent 2.8rpx);
+  background-size: 13rpx 13rpx;
+}
+/* 脏黄胶带条 */
+.shape-b {
+  right: -6%;
+  bottom: 30%;
+  width: 76%;
+  height: 26rpx;
+  background: rgba(212, 197, 90, 0.88);
+  transform: rotate(-7deg);
+  box-shadow: 2rpx 3rpx 0 rgba(26, 26, 26, 0.5);
+}
+/* 粗黑白条码杠 */
+.shape-c {
+  left: 10%;
+  bottom: 12%;
+  width: 72%;
+  height: 16rpx;
+  background: repeating-linear-gradient(90deg, #1a1a1a 0 10rpx, transparent 10rpx 20rpx);
+  transform: rotate(-3deg);
+}
+
+/* 变体：换贴纸色 / 倾角 */
+.v0 { --c1: #2a4a7a; --rot: -1.6deg; }
+.v1 { --c1: #cc3333; --rot: 1.8deg; }
+.v2 { --c1: #d4c55a; --rot: -0.8deg; }
+.v3 { --c1: #1a1a1a; --rot: 2.2deg; }
+.v4 { --c1: #6b6b3a; --rot: -2.2deg; }
+.v5 { --c1: #7a3b3b; --rot: 1.1deg; }
+.v3 .shape-a { background-image: radial-gradient(rgba(234, 230, 223, 0.9) 2rpx, transparent 2.8rpx); }
+
+/* 右侧信息 */
+.info { flex: 1; padding: 24rpx 26rpx; min-width: 0; }
+/* 标题：套印错位（红影重印） */
+.title {
+  font-size: 32rpx;
+  font-weight: 900;
+  color: #1a1a1a;
+  letter-spacing: 2rpx;
+  margin-bottom: 14rpx;
+  text-shadow: 2rpx 2rpx 0 rgba(204, 51, 51, 0.55);
+}
+/* 正文：打字机体 */
+.meta {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 8rpx;
+}
+.tick {
+  width: 13rpx;
+  height: 13rpx;
+  background: #cc3333;
+  margin: 12rpx 12rpx 0 0;
+  flex-shrink: 0;
+  transform: rotate(-8deg);
+}
+.line {
+  font-family: 'Courier New', monospace;
+  font-size: 23rpx;
+  color: #33302a;
+  line-height: 1.65;
+  font-weight: 700;
+}
+
+/* 标签：橡皮章 */
+.stamp {
+  display: inline-block;
+  margin-top: 16rpx;
+  font-size: 20rpx;
+  font-weight: 900;
+  letter-spacing: 4rpx;
+  text-transform: uppercase;
+  color: #cc3333;
+  border: 3rpx solid #cc3333;
+  border-radius: 6rpx;
+  padding: 6rpx 16rpx;
+  background: rgba(204, 51, 51, 0.07);
+  transform: rotate(-6deg);
+}
+.v1 .stamp, .v3 .stamp { color: #1a1a1a; border-color: #1a1a1a; background: rgba(26, 26, 26, 0.05); }
+
+/* 底部状态 */
+.footer { text-align: center; padding: 20rpx 0 8rpx; }
+.footer text { font-size: 24rpx; color: #57534a; font-weight: 700; white-space: pre-line; }
+.footer .err { color: #cc3333; font-weight: 900; }

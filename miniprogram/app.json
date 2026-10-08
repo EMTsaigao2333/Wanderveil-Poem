@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "pages/onboarding/onboarding",
+    "pages/play/play"
+  ],
+  "window": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "幻行诗篇",
+    "navigationBarBackgroundColor": "#0b0f14",
+    "backgroundColor": "#0b0f14"
+  },
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "lazyCodeLoading": "requiredComponents"
+}

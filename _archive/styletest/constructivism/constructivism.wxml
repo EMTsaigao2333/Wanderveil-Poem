@@ -1,0 +1,31 @@
+<view class="page">
+  <view class="toolbar">
+    <view class="badge">SERVER 127.0.0.1:3000</view>
+    <view class="stat">已加载 {{list.length}} / {{total}} 条</view>
+  </view>
+
+  <view class="list">
+    <view class="item v{{item.variant}}" wx:for="{{list}}" wx:key="id">
+      <view class="visual">
+        <view class="shape shape-a"></view>
+        <view class="shape shape-b"></view>
+        <view class="shape shape-c"></view>
+      </view>
+      <view class="info">
+        <view class="title">{{item.title}}</view>
+        <view class="meta" wx:for="{{item.meta}}" wx:for-item="line" wx:key="*this">
+          <text class="tick"></text>
+          <text class="line">{{line}}</text>
+        </view>
+        <view class="stamp">{{item.tag}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="footer">
+    <text wx:if="{{error}}" class="err" bindtap="retry">加载失败：{{error}}（点我重试 ↻）</text>
+    <text wx:elif="{{loading}}">正在从服务器拉取…</text>
+    <text wx:elif="{{hasMore}}">▲ 上拉加载更多</text>
+    <text wx:else>— 已经到底啦，共 {{total}} 条 —</text>
+  </view>
+</view>
