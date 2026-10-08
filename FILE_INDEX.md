@@ -6,11 +6,22 @@
 ## 根目录
 
 - `PROJECT_SYNC.md` — 项目同步文件（多 AI 协作总入口：决策/看板/交接日志/工作流规则） — 开工前必读 — 2026-09-23
-- `FILE_INDEX.md` — 本索引文件 — 2026-09-24
-- `package.json` — 项目依赖与脚本（小程序 TS 模板默认） — 无业务依赖 — 2026-09-14
-- `project.config.json` — 小程序项目配置 — appid（当前为测试号）、编译设置、miniprogramRoot — 2026-09-14
-- `project.private.config.json` — 本地私有配置（个人覆盖项） — 不入库 — 2026-09-14
+- `FILE_INDEX.md` — 本索引文件 — 2026-10-08
+- `package.json` — 项目依赖与脚本 — 无业务依赖；**scripts 已补 `typecheck`（`tsc --noEmit -p miniprogram/tsconfig.json`）**；`validate` / `simulate` 待 P0-B 建 `tools/` 后再补 — 2026-10-08
+- `project.config.json` — **小程序项目配置（DevTools 实际读取的那份）** — appid（测试号 `wxfa24fde2ed5bd6ef`）、`miniprogramRoot: miniprogram/`、**`useCompilerPlugins: ["typescript"]`**、**`es6: true`（2026-10-08 由 `false` 改正）**、**`libVersion: 3.17.2`（原 `trial`，改为固定稳定版，避免跟随官方灰度漂移）** — 2026-10-08
+- `project.private.config.json` — 本地私有配置（个人覆盖项） — **不入库（已写入 .gitignore）**；已清理失效的 `styletest/index` 编译条件 — 2026-10-08
+- `.gitignore` — **新建** — 忽略 `node_modules/` `miniprogram_npm/` `project.private.config.json` `miniprogram/project.private.config.json` `_audit/` — 2026-10-08
 - `tsconfig.json` — TS 编译配置 — strict / noUnusedLocals / 目标 ES2020 — 2026-09-14
+
+## tools/（校验与模拟工具，2026-10-08 新建）
+
+> 为什么存在：历次「tsc 全绿 + N 项断言 + 480 局批量模拟」的脚本一个都没留在仓库里，导致寿命档位失效的缺陷漏到今天。本目录把观察能力固化。**零 npm 依赖**（靠 Node 24 原生 TS 剥离 + ESM resolve hook 直接 import 项目 .ts）。
+
+- `tools/lib/load-ts.mjs` — **可复用 TS 加载器** — `loadProject(relPath)`（动态 import 项目 .ts，必须在 hook 注册后）、`silenceWx()`（非小程序环境回落内存存储）、`PROJECT_ROOT`；import 即注册 resolve hook — 2026-10-08
+- `tools/lib/ts-resolve.mjs` — ESM resolve hook — 把无扩展名的相对导入补成 `.ts`（engine 内部写法是 `import './schema'`） — 2026-10-08
+- `tools/validate-data.mjs` — **数据契约校验（15 项）** — 直接 import 真实数据结构校验（非扫源码）：事件 id 唯一与 `cb_<阶段简称>_NNN` 命名、特质引用完整、标签来源闭合（特质 / **背景包** / 事件三路）、dropTags 有来源、caps 有来源、语义键 10 个合法、psyche 键 4 个合法、「无事件的所有选项都被门槛挡掉」、带 check 的选项必有 success+fail、stage 与 require.age 不矛盾、crit 只在 major、death 不在 success/critSuccess、years 1~5、正文 40~80、标签命名空间不混用；输出各阶段事件数 / DC 分布 / 语义键与 psyche 频次 / 标签产出消费比 / money 量级报数 — 2026-10-08
+- `tools/simulate.mjs` — **批量模拟 + 文档目标断言** — `--runs` / `--system classic5|heart6|roulette` / `--strategy random|first|life`；输出寿命分布（最小/p25/中位/p75/最大）、死因分布、检定成功率、属性饱和度（中位/p90/贴顶比例）、life 模式的终局持有标签；对照 `01-heart6-spec.md` §6.1 的 40/55/60/65+ 目标做 ±3 岁断言 → **当前 4/5 档失败（预期行为，证明缺陷）** — 2026-10-08
+- `tools/README.md` — 用法 / 参数 / 当前实测值 / **哪些断言在失败、为什么** / 与 `_audit/_scratch/` 历史脚本的对应关系 — 2026-10-08
 
 ## docs/design/（第 0 步设计文档，2026-09-23 产出并**全部确认落定**）
 
@@ -86,8 +97,8 @@
 
 - `miniprogram/tsconfig.json` — 小程序 TS 编译配置（继承根配置） — `typeRoots: ../typings`、**`skipLibCheck: true`**（微信官方 typings 2.8.x 与较新 tsc 不兼容，属第三方声明问题） — 2026-09-23
 - `miniprogram/app.json` — 全局配置 — **页面注册 `pages/onboarding/onboarding`（首页，开局向导）+ `pages/play/play`**（人生引擎页）；窗口样式深色（`#0b0f14` / 白字）、无 tabBar — 2026-09-24
-- `project.config.json`（**根目录，DevTools 实际读取的那份**） — 小程序项目配置 — `miniprogramRoot: miniprogram/`、**`useCompilerPlugins: ["typescript"]`（没有它 DevTools 不会编译 .ts）**、`appid: wxfa24fde2ed5bd6ef`、`libVersion: trial`；`project.private.config.json` 里另有 `skylineRenderEnable: true` 与 `libVersion 3.17.2`（个人覆盖项，不入库） — 2026-09-24
-- `miniprogram/project.config.json` — **多余副本（内容与根目录那份不一致，且写着 `useCompilerPlugins: false`）** — 未被 DevTools 使用，建议删除 — 2026-09-24
+- ~~`miniprogram/project.config.json` / `miniprogram/project.private.config.json`~~ — **已于 2026-10-08 删除**：两份多余副本，与根目录那份矛盾（前者写 `useCompilerPlugins: false`、后者写 `skylineRenderEnable: false`），若误用「打开 miniprogram 目录」会导致 .ts 不被编译、白屏且极难排查；已确认无任何代码引用 — 2026-10-08
+- `miniprogram/sitemap.json` — **新建** — 最小 sitemap（`{"action":"allow","page":"*"}`），消除 app.json 未声明 `sitemapLocation` 的构建告警 — 2026-10-08
 - `miniprogram/app.ts` — 应用入口 — App.onLaunch 空实现 — 2026-09-14
 - `miniprogram/app.wxss` — 全局样式 — 空模板 — 2026-09-14
 - `miniprogram/utils/pending-start.ts` — **开局向导 → 人生页交接契约（storage `onboarding:pending`）** — `PENDING_START_KEY` `PendingStart` `readPendingStart()`（读取即删）；**必须独立于页面文件**：app.json 开了按需注入，页面 JS 被其他文件 require 会报 module not defined（2026-09-24 踩坑记录） — 2026-09-24

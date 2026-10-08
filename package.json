@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "typecheck": "tsc --noEmit -p miniprogram/tsconfig.json"
+    "typecheck": "tsc --noEmit -p miniprogram/tsconfig.json",
+    "validate": "node tools/validate-data.mjs",
+    "simulate": "node tools/simulate.mjs"
   },
   "keywords": [],
   "author": "",
