@@ -12,17 +12,18 @@
  * 心理状态量在人物卡上隐藏，避免开局信息过载。
  */
 
-import type { AttrSystemId } from '../../engine/schema';
+import type { AttrSystemId, WorldPack } from '../../engine/schema';
 import { deleteRun, hasFreeRunSlot, listRuns, MAX_RUNS } from '../../engine/run-state';
 import type { RollResult, RollStep } from '../../engine/roulette';
 import { rollCharacter, rerollSideSlot } from '../../engine/roulette';
 import { startRun } from '../../engine/story-engine';
-import type { AttrSystem } from '../../data/attributes';
 import { ATTR_SYSTEMS } from '../../data/attributes';
 import type { ContentPrefs } from '../../data/traits/index';
 import { getTraitPool, groupByCategory } from '../../data/traits/index';
-import type { TraitCategory, TraitSlot } from '../../data/traits/types';
-import { cyberpunkPack } from '../../data/worlds/cyberpunk/index';
+import type { TraitCategory, TraitPool, TraitSlot } from '../../data/traits/types';
+import { WORLD_LIST, WORLDS } from '../../data/worlds/index';
+import type { AttrRow } from '../../utils/attr-rows';
+import { attrRowsOf } from '../../utils/attr-rows';
 import type { PendingStart } from '../../utils/pending-start';
 import { PENDING_START_KEY } from '../../utils/pending-start';
 
@@ -67,13 +68,6 @@ interface CardRow {
   text: string;
 }
 
-interface AttrRow {
-  key: string;
-  name: string;
-  value: number;
-  pct: number;
-}
-
 interface SlotOption {
   slot: string;
   name: string;
@@ -85,11 +79,25 @@ interface TapEvent {
 }
 
 /* ------------------------------------------------------------------ */
-/* 常量                                                                */
+/* 常量与当前世界                                                       */
 /* ------------------------------------------------------------------ */
 
-const POOL = getTraitPool('cyberpunk');
-const META = cyberpunkPack.meta;
+/** 当前选中的世界（从注册表取，默认第一个；此前写死 cyberpunkPack，世界选择是装饰） */
+let wizWorld: WorldPack = WORLD_LIST[0];
+/** 当前世界的特质池（按 WorldMeta.traitPoolId 取，缺省用世界 id） */
+let wizPool: TraitPool = poolOf(wizWorld);
+
+function poolOf(pack: WorldPack): TraitPool {
+  return getTraitPool(pack.meta.traitPoolId ?? pack.meta.id);
+}
+
+/** 世界列表（第 1 步展示用，从注册表生成） */
+const WORLD_OPTIONS: WorldOption[] = WORLD_LIST.map((p) => ({
+  id: p.meta.id,
+  name: p.meta.name,
+  brief: p.meta.brief,
+  model: p.meta.lifeModel === 'full' ? '完整一生' : '片段连载',
+}));
 
 const STEP_FLOW_ROULETTE: StepId[] = ['world', 'system', 'prefs', 'build', 'card', 'name'];
 const STEP_FLOW_ROLL: StepId[] = ['world', 'system', 'prefs', 'card', 'name'];
@@ -176,19 +184,30 @@ function cardRowsOf(roll: RollResult): CardRow[] {
   return rows;
 }
 
-/** 属性条数据 */
-function attrRowsOf(values: Record<string, number>, system: AttrSystem): AttrRow[] {
-  return system.attrs.map((def) => {
-    const value = Math.round((values[def.key] ?? 0) * 10) / 10;
-    const span = def.max - def.min || 20;
-    const pct = Math.max(0, Math.min(100, Math.round(((value - def.min) / span) * 100)));
-    return { key: def.key, name: def.name, value, pct };
+/** 内容偏好分组：按当前世界的特质池生成（本地存过则沿用勾选，没存过则全部关闭） */
+function prefsGroups(): PrefGroup[] {
+  const saved = loadPrefs();
+  const grouped = groupByCategory(wizPool);
+  return CATEGORY_ORDER.filter((c) => (grouped[c] ?? []).length > 0).map((c) => {
+    const items: PrefItem[] = (grouped[c] ?? [])
+      .filter((t) => t.safety?.sensitive || t.safety?.tender)
+      .map((t) => {
+        const gate: 'sensitive' | 'tender' = t.safety?.sensitive ? 'sensitive' : 'tender';
+        const list = gate === 'sensitive' ? saved.sensitive : saved.tender;
+        return {
+          id: t.id,
+          name: t.safety?.neutralLabel ?? t.name,
+          gate,
+          on: list?.includes(t.id) ?? false,
+        };
+      });
+    return { key: c, name: CATEGORY_NAME[c] ?? c, items, allOn: items.every((i) => i.on) };
   });
 }
 
 function backgroundName(id: string | undefined): string {
   if (!id) return '—';
-  return META.backgrounds.find((b) => b.id === id)?.name ?? id;
+  return wizWorld.meta.backgrounds.find((b) => b.id === id)?.name ?? id;
 }
 
 Component({
@@ -197,9 +216,7 @@ Component({
     stepLabel: '第 1 / 6 步',
     stepName: STEP_NAME.world,
 
-    worlds: [
-      { id: META.id, name: META.name, brief: META.brief, model: '完整一生' },
-    ] as WorldOption[],
+    worlds: WORLD_OPTIONS,
     worldId: '',
     worldOpening: '',
     systems: (['classic5', 'heart6', 'roulette'] as AttrSystemId[]).map((id) => ({
@@ -230,26 +247,7 @@ Component({
 
   lifetimes: {
     attached() {
-      // 内容偏好：本地存过则沿用勾选状态，没存过则全部关闭（默认即安全）
-      const saved = loadPrefs();
-      const grouped = groupByCategory(POOL);
-      const prefs: PrefGroup[] = CATEGORY_ORDER.filter((c) => (grouped[c] ?? []).length > 0).map(
-        (c) => {
-          const items: PrefItem[] = (grouped[c] ?? [])
-            .filter((t) => t.safety?.sensitive || t.safety?.tender)
-            .map((t) => {
-              const gate: 'sensitive' | 'tender' = t.safety?.sensitive ? 'sensitive' : 'tender';
-              const list = gate === 'sensitive' ? saved.sensitive : saved.tender;
-              return {
-                id: t.id,
-                name: t.safety?.neutralLabel ?? t.name,
-                gate,
-                on: list?.includes(t.id) ?? false,
-              };
-            });
-          return { key: c, name: CATEGORY_NAME[c] ?? c, items, allOn: items.every((i) => i.on) };
-        },
-      );
+      const prefs = prefsGroups();
       this.setData({ prefs, prefsCount: this.countPrefs(prefs), saves: listRuns().length });
     },
   },
@@ -281,8 +279,19 @@ Component({
 
     onPickWorld(e: TapEvent) {
       const id = e.currentTarget.dataset.id;
-      if (id !== META.id) return;
-      this.setData({ worldId: id, worldOpening: META.opening, note: '' });
+      const next = id ? WORLDS[id] : undefined;
+      if (!next) return; // 只认注册表里的世界（此前直接否决除 cyberpunk 以外的一切）
+      wizWorld = next;
+      wizPool = poolOf(next);
+      // 特质池随世界变化 → 内容偏好面板重建
+      const prefs = prefsGroups();
+      this.setData({
+        worldId: next.meta.id,
+        worldOpening: next.meta.opening,
+        note: '',
+        prefs,
+        prefsCount: this.countPrefs(prefs),
+      });
     },
 
     onNextFromWorld() {
@@ -345,11 +354,11 @@ Component({
       clearWizardTimers();
       const seed = Date.now();
       const prefs = prefsOf(this.data.prefs);
-      wizardRoll = rollCharacter(POOL, META.lifeModel, {
+      wizardRoll = rollCharacter(wizPool, wizWorld.meta.lifeModel, {
         seed,
         prefs,
         age: 0,
-        backgrounds: META.backgrounds,
+        backgrounds: wizWorld.meta.backgrounds,
       });
       wizardSeed = seed;
       const rows: BuildRow[] = wizardRoll.steps.map((s) => ({
@@ -389,7 +398,7 @@ Component({
       if (systemId === 'roulette' && wizardRoll) {
         wizardBackgroundId = wizardRoll.background?.id;
         // 属性面板用引擎真实建局后的值：出身背景包会在开局时追加属性加成
-        const preview = startRun(cyberpunkPack, {
+        const preview = startRun(wizWorld, {
           attrSystem: 'roulette',
           seed: wizardRoll.seed,
           prefs: prefsOf(this.data.prefs),
@@ -398,7 +407,7 @@ Component({
         this.setData({
           cardRows: cardRowsOf(wizardRoll),
           systemName: ATTR_SYSTEMS.roulette.name,
-          previewAttrs: attrRowsOf(preview.attrs, ATTR_SYSTEMS.roulette),
+          previewAttrs: attrRowsOf(ATTR_SYSTEMS.roulette, preview.attrs),
           rerollLeft: 1,
           sideSlots: wizardRoll.steps
             .filter((s) => !s.required)
@@ -407,11 +416,11 @@ Component({
         });
         return;
       }
-      const run = startRun(cyberpunkPack, { attrSystem: systemId, seed: wizardSeed, prefs: prefsOf(this.data.prefs) });
+      const run = startRun(wizWorld, { attrSystem: systemId, seed: wizardSeed, prefs: prefsOf(this.data.prefs) });
       this.setData({
         cardRows: [{ name: '出身', text: backgroundName(run.backgroundId) }],
         systemName: ATTR_SYSTEMS[systemId].name,
-        previewAttrs: attrRowsOf(run.attrs, ATTR_SYSTEMS[systemId]),
+        previewAttrs: attrRowsOf(ATTR_SYSTEMS[systemId], run.attrs),
         rerollLeft: 0,
         sideSlots: [],
         pickingSlot: false,
@@ -427,15 +436,15 @@ Component({
     onPickRerollSlot(e: TapEvent) {
       const slot = e.currentTarget.dataset.slot as TraitSlot | undefined;
       if (!slot || !wizardRoll || this.data.rerollLeft <= 0) return;
-      const next = rerollSideSlot(wizardRoll, POOL, META.lifeModel, slot, {
+      const next = rerollSideSlot(wizardRoll, wizPool, wizWorld.meta.lifeModel, slot, {
         prefs: prefsOf(this.data.prefs),
         age: 0,
-        backgrounds: META.backgrounds,
+        backgrounds: wizWorld.meta.backgrounds,
       });
       wizardRoll = next;
       wizardSeed = next.seed;
       wizardBackgroundId = next.background?.id;
-      const preview = startRun(cyberpunkPack, {
+      const preview = startRun(wizWorld, {
         attrSystem: 'roulette',
         seed: next.seed,
         prefs: prefsOf(this.data.prefs),
@@ -445,7 +454,7 @@ Component({
         pickingSlot: false,
         rerollLeft: 0,
         cardRows: cardRowsOf(next),
-        previewAttrs: attrRowsOf(preview.attrs, ATTR_SYSTEMS.roulette),
+        previewAttrs: attrRowsOf(ATTR_SYSTEMS.roulette, preview.attrs),
       });
     },
 
@@ -471,10 +480,12 @@ Component({
         return;
       }
       const name = this.data.name.trim();
+      const worldId = this.data.worldId || wizWorld.meta.id;
       const pending: PendingStart =
         systemId === 'roulette' && wizardRoll
           ? {
               mode: 'new',
+              worldId,
               attrSystem: systemId,
               seed: wizardRoll.seed,
               prefs: prefsOf(this.data.prefs),
@@ -484,6 +495,7 @@ Component({
             }
           : {
               mode: 'new',
+              worldId,
               attrSystem: systemId,
               seed: wizardSeed,
               prefs: prefsOf(this.data.prefs),

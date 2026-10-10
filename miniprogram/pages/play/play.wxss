@@ -135,10 +135,37 @@ page {
   height: 40rpx;
 }
 
+.attr-name-wrap {
+  display: flex;
+  align-items: center;
+  width: 112rpx;
+  flex-shrink: 0;
+}
+
+/* 致命属性标记（09 文档 §3：归零即死，必须让玩家看得见） */
+.attr-fatal-dot {
+  width: 10rpx;
+  height: 10rpx;
+  margin-right: 8rpx;
+  border-radius: 5rpx;
+  background: #e05a5a;
+  flex-shrink: 0;
+}
+
 .attr-name {
-  width: 96rpx;
   font-size: 24rpx;
   color: #7b8fa3;
+}
+
+/* 危险线：低于 25% 变橙、低于 10% 变红（此前面板没有任何预警） */
+.attr-warn .attr-name,
+.attr-warn .attr-value {
+  color: #d8835a;
+}
+
+.attr-low .attr-name,
+.attr-low .attr-value {
+  color: #e05a5a;
 }
 
 .attr-track {
@@ -153,6 +180,14 @@ page {
 .attr-fill {
   height: 100%;
   background: #35c6d8;
+}
+
+.attr-fill-warn {
+  background: #d8835a;
+}
+
+.attr-fill-low {
+  background: #e05a5a;
 }
 
 .attr-value {

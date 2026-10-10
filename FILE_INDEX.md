@@ -18,7 +18,7 @@
 > 为什么存在：历次「tsc 全绿 + N 项断言 + 480 局批量模拟」的脚本一个都没留在仓库里，导致寿命档位失效的缺陷漏到今天。本目录把观察能力固化。**零 npm 依赖**（靠 Node 24 原生 TS 剥离 + ESM resolve hook 直接 import 项目 .ts）。
 
 - `tools/lib/load-ts.mjs` — **可复用 TS 加载器** — `loadProject(relPath)`（动态 import 项目 .ts，必须在 hook 注册后）、`silenceWx()`（非小程序环境回落内存存储）、`PROJECT_ROOT`；import 即注册 resolve hook — 2026-10-08
-- `tools/lib/ts-resolve.mjs` — ESM resolve hook — 把无扩展名的相对导入补成 `.ts`（engine 内部写法是 `import './schema'`） — 2026-10-08
+- `tools/lib/ts-resolve.mjs` — ESM resolve hook — 把无扩展名的相对导入补成 `.ts`（engine 内部写法是 `import './schema'`），**并支持目录导入 `./cyberpunk` → `cyberpunk/index.ts`**（2026-10-10 补，否则 `data/worlds/index.ts` 这类写法在 Node 里加载不了） — 2026-10-10
 - `tools/validate-data.mjs` — **数据契约校验（15 项）** — 直接 import 真实数据结构校验（非扫源码）：事件 id 唯一与 `cb_<阶段简称>_NNN` 命名、特质引用完整、标签来源闭合（特质 / **背景包** / 事件三路）、dropTags 有来源、caps 有来源、语义键 10 个合法、psyche 键 4 个合法、「无事件的所有选项都被门槛挡掉」、带 check 的选项必有 success+fail、stage 与 require.age 不矛盾、crit 只在 major、death 不在 success/critSuccess、years 1~5、正文 40~80、标签命名空间不混用；输出各阶段事件数 / DC 分布 / 语义键与 psyche 频次 / 标签产出消费比 / money 量级报数 — 2026-10-08
 - `tools/simulate.mjs` — **批量模拟 + 文档目标断言** — `--runs` / `--system classic5|heart6|roulette` / `--strategy random|first|life`；输出寿命分布（最小/p25/中位/p75/最大）、死因分布、检定成功率、属性饱和度（中位/p90/贴顶比例）、life 模式的终局持有标签；对照 `01-heart6-spec.md` §6.1 的 40/55/60/65+ 目标做 ±3 岁断言 → **当前 4/5 档失败（预期行为，证明缺陷）** — 2026-10-08
 - `tools/README.md` — 用法 / 参数 / 当前实测值 / **哪些断言在失败、为什么** / 与 `_audit/_scratch/` 历史脚本的对应关系 — 2026-10-08
@@ -88,8 +88,8 @@
 
 ## miniprogram/pages/（页面）
 
-- `pages/onboarding/` — **开局向导（2026-09-24 新建，4 文件，当前为小程序首页）** — 六屏：选世界 → 选属性系统 → **内容偏好面板**（9 类分组 + 每类全开/全关 + 单条勾选，偏好存 `content:prefs` 供设置页共用）→ 抽取展示（转盘逐槽定格 0.65s/槽可跳过，仅全随机模式显示）→ 人物卡确认（**转盘模式可改写一次副线**；属性预览用 `startRun(..., {roll})` 建局后的真实值，五维/六维靠同种子现抽复现、预览不传 backgroundId）→ 起名（默认随机可改）。完成后写 storage `onboarding:pending` 跳人生页。调 `rollCharacter` / `rerollSideSlot` / `startRun` / `hasFreeRunSlot` / `deleteRun` / `listRuns` — 2026-09-24
-- `pages/play/` — **人生引擎页（4 文件）** — 单页打通「开局 → 逐年事件与选项 → 检定与结果 → 死亡 / 结局」：attached 读 `onboarding:pending`（读取即删）交接开局配置（`continue` 载存档；`new` 带 `attrSystem` 则 `startRun` 建局，**转盘模式经 `roll` 带入向导抽好的卡**；无 pending 才显示原开始段「选属性系统 → 开始/继续 + 存档位读数与清空」）；人生段（年龄·阶段·金钱 HUD、属性面板、人物卡、事件正文、选项按钮（关键抉择高亮 + 检定档位）、**检定骰子滚动动画**（数字跳动约 0.8s 后揭示真实结果，含大成功/大失败显示）、变化明细、心理状态量）、结局段（死因 + 最终属性 + 人生时间线倒序）。调 `startRun` / `nextStep` / `submitChoice` / `loadCurrentRun` / `listRuns` / `deleteRun` — 2026-09-24
+- `pages/onboarding/` — **开局向导（2026-09-24 新建，4 文件，当前为小程序首页）** — 六屏：选世界 → 选属性系统 → **内容偏好面板**（9 类分组 + 每类全开/全关 + 单条勾选，偏好存 `content:prefs` 供设置页共用）→ 抽取展示（转盘逐槽定格 0.65s/槽可跳过，仅全随机模式显示）→ 人物卡确认（**转盘模式可改写一次副线**；属性预览用 `startRun(..., {roll})` 建局后的真实值，五维/六维靠同种子现抽复现、预览不传 backgroundId）→ 起名（默认随机可改）。完成后写 storage `onboarding:pending`（**含 `worldId`**）跳人生页。调 `rollCharacter` / `rerollSideSlot` / `startRun` / `hasFreeRunSlot` / `deleteRun` / `listRuns`；**属性面板改用共享 `utils/attr-rows.ts`（原先与 play 页各写一份）**。**2026-10-10 去硬编码**：世界列表由 `WORLD_LIST` 生成、`onPickWorld` 接受注册表里任一世界（原先 `if (id !== META.id) return` 直接否决其余世界）、当前世界的 `WorldPack` 与特质池存模块级 `wizWorld` / `wizPool`（切世界时重建内容偏好面板），`rollCharacter` / `rerollSideSlot` / `startRun` 一律用当前世界（含其 `lifeModel` / `backgrounds` / `traitPoolId`）— 2026-10-10
+- `pages/play/` — **人生引擎页（4 文件）** — 单页打通「开局 → 逐年事件与选项 → 检定与结果 → 死亡 / 结局」：attached 读 `onboarding:pending`（读取即删）交接开局配置（`continue` 载存档；`new` 带 `attrSystem` 则 `startRun` 建局，**转盘模式经 `roll` 带入向导抽好的卡**；无 pending 才显示原开始段「选属性系统 → 开始/继续 + 存档位读数与清空」）；人生段（年龄·阶段·金钱 HUD、属性面板、人物卡、事件正文、选项按钮（关键抉择高亮 + 检定档位）、**检定骰子滚动动画**（数字跳动约 0.8s 后揭示真实结果，含大成功/大失败显示）、变化明细、心理状态量）、结局段（死因 + 最终属性 + 人生时间线倒序）。调 `startRun` / `nextStep` / `submitChoice` / `loadCurrentRun` / `listRuns` / `deleteRun`；**2026-10-10 修复 8 项**：① **骰子动画竞态** —— 新增 `stopDiceAnim()`（clearInterval + 递增 `revealToken` 令牌）并在 `onPick`（动画中禁止再点）/ `onContinue` / `advance` / `beginRun` / `detached` 调用，回调不再回读 `run.history`（改为调用方捕获结果与真实骰面传入）；② **setData 只传派生标量** —— `run` / `event` 移出 data 改存模块级 `currentRun` / `currentEvent`（人生段单次载荷 977B vs 整局 9762B，约 1/10）；③ **存档读不出来与「没有存档」分开提示**（`listRuns().length > 0` 且 `loadCurrentRun()` 为 null → 「旧版本存档无法读取」）；④ **属性面板危险线**（<25% 橙 / <10% 红 + 致命属性红点，样式见 `play.wxss`）；⑤ **心理状态量复用 `PSYCHE_LABEL`**（不再输出 `suppression` 等英文键名）；⑥ **货币名 / 世界名从 `WorldMeta` 读**（`currencyName` / `name`，不再硬编码「信用点」「雾港 · 霓虹残响」）；⑦ **世界贯通** —— 按 `pending.worldId`（继续人生时按 `run.worldId`）从 `WORLDS` 取世界，全部引擎调用改用该世界；⑧ 属性面板改用共享 `utils/attr-rows.ts` — 2026-10-10
 
 > 模板示例页 `pages/index/`（Hello World）与 `pages/logs/` 已于 2026-09-24 删除；正式首页视觉与视觉小说主界面排在玩法稳定后。
 
@@ -101,7 +101,8 @@
 - `miniprogram/sitemap.json` — **新建** — 最小 sitemap（`{"action":"allow","page":"*"}`），消除 app.json 未声明 `sitemapLocation` 的构建告警 — 2026-10-08
 - `miniprogram/app.ts` — 应用入口 — App.onLaunch 空实现 — 2026-09-14
 - `miniprogram/app.wxss` — 全局样式 — 空模板 — 2026-09-14
-- `miniprogram/utils/pending-start.ts` — **开局向导 → 人生页交接契约（storage `onboarding:pending`）** — `PENDING_START_KEY` `PendingStart` `readPendingStart()`（读取即删）；**必须独立于页面文件**：app.json 开了按需注入，页面 JS 被其他文件 require 会报 module not defined（2026-09-24 踩坑记录） — 2026-09-24
+- `miniprogram/utils/pending-start.ts` — **开局向导 → 人生页交接契约（storage `onboarding:pending`）** — `PENDING_START_KEY` `PendingStart`（**2026-10-10 新增 `worldId?`，世界选择这才真正传得下去**）`readPendingStart()`（读取即删）；**必须独立于页面文件**：app.json 开了按需注入，页面 JS 被其他文件 require 会报 module not defined（2026-09-24 踩坑记录） — 2026-10-10
+- `miniprogram/utils/attr-rows.ts` — **新建｜属性面板数据（play 与 onboarding 共用）** — `AttrRow`（`key` / `name` / `value` / `pct` / **`level: normal|warn|low` 危险档位** / **`fatal` 致命标记**）`attrRowsOf(system, values)`；危险线阈值 <25% 橙、<10% 红（09 文档 §3 要求界面必须给出信号）；**页面之间禁止互相 import，共享代码一律放 utils/**（原两页各写一份的重复实现已删除） — 2026-10-10
 - `miniprogram/utils/util.ts` — 模板工具函数 — `formatTime`（待清理/替换） — 2026-09-14
 
 ## typings/

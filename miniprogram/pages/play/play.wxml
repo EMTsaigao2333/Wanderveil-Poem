@@ -4,7 +4,7 @@
   <!-- ============ 开始 ============ -->
   <block wx:if="{{phase === 'start'}}">
     <view class="logo">幻行诗篇</view>
-    <view class="logo-sub">雾港 · 霓虹残响</view>
+    <view class="logo-sub">{{worldName}}</view>
 
     <view class="section-label">选择属性系统</view>
     <view
@@ -30,15 +30,22 @@
   <!-- ============ 人生 ============ -->
   <block wx:elif="{{phase === 'life'}}">
     <view class="hud">
-      <text class="hud-age">{{run.age}} 岁 · {{stage}}</text>
-      <text class="hud-money">{{run.money}} 信用点</text>
+      <text class="hud-age">{{age}} 岁 · {{stage}}</text>
+      <text class="hud-money">{{money}} {{currencyName}}</text>
     </view>
     <view wx:if="{{card}}" class="hud-card">{{card}}</view>
 
     <view class="attrs">
-      <view wx:for="{{attrRows}}" wx:key="key" class="attr">
-        <text class="attr-name">{{item.name}}</text>
-        <view class="attr-track"><view class="attr-fill" style="width:{{item.pct}}%"></view></view>
+      <view
+        wx:for="{{attrRows}}"
+        wx:key="key"
+        class="attr {{item.level === 'low' ? 'attr-low' : item.level === 'warn' ? 'attr-warn' : ''}}"
+      >
+        <view class="attr-name-wrap">
+          <view wx:if="{{item.fatal}}" class="attr-fatal-dot"></view>
+          <text class="attr-name">{{item.name}}</text>
+        </view>
+        <view class="attr-track"><view class="attr-fill attr-fill-{{item.level}}" style="width:{{item.pct}}%"></view></view>
         <text class="attr-value">{{item.value}}</text>
       </view>
     </view>
@@ -88,13 +95,20 @@
   <!-- ============ 结局 ============ -->
   <block wx:elif="{{phase === 'end'}}">
     <view class="end-title">这一生结束了</view>
-    <view class="end-meta">活了 {{run.age}} 年 · 止于{{stage}}</view>
-    <view class="end-cause">{{run.deathCause}}</view>
+    <view class="end-meta">活了 {{age}} 年 · 止于{{stage}}</view>
+    <view class="end-cause">{{deathCause}}</view>
 
     <view class="attrs">
-      <view wx:for="{{attrRows}}" wx:key="key" class="attr">
-        <text class="attr-name">{{item.name}}</text>
-        <view class="attr-track"><view class="attr-fill" style="width:{{item.pct}}%"></view></view>
+      <view
+        wx:for="{{attrRows}}"
+        wx:key="key"
+        class="attr {{item.level === 'low' ? 'attr-low' : item.level === 'warn' ? 'attr-warn' : ''}}"
+      >
+        <view class="attr-name-wrap">
+          <view wx:if="{{item.fatal}}" class="attr-fatal-dot"></view>
+          <text class="attr-name">{{item.name}}</text>
+        </view>
+        <view class="attr-track"><view class="attr-fill attr-fill-{{item.level}}" style="width:{{item.pct}}%"></view></view>
         <text class="attr-value">{{item.value}}</text>
       </view>
     </view>

@@ -15,6 +15,8 @@ export const PENDING_START_KEY = 'onboarding:pending';
 
 export interface PendingStart {
   mode: 'continue' | 'new';
+  /** 向导里选中的世界 id（从 data/worlds/index.ts 的注册表取 WorldPack）；缺省回落注册表第一个 */
+  worldId?: string;
   attrSystem?: AttrSystemId;
   seed?: number;
   prefs?: ContentPrefs;
