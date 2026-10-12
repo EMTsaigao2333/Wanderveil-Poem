@@ -196,13 +196,34 @@ feat(engine): 新增致死档位与失败代价字段
 属性饱和度仍为 98%，寿命档位仍偏离文档目标 40 岁。
 ```
 
-**写提交信息的方式**（PowerShell 不支持 heredoc，必须用文件）：
+**写提交信息的方式**（PowerShell 不支持 heredoc，二选一）：
 
 ```powershell
-# 用 write 工具或 [System.IO.File]::WriteAllText 写 .commitmsg.tmp（无 BOM）
+# 方式 1（推荐）：直接用 -m，不产生任何文件
+$msg = @'
+feat(engine): 新增致死档位与失败代价字段
+
+- ...
+'@
+git commit -m $msg
+```
+
+```powershell
+# 方式 2：用临时文件（信息很长时）
+# 必须先用 §3.1 的无 BOM 方式写文件
+[System.IO.File]::WriteAllText("$PWD\.commitmsg.tmp", $msg, (New-Object System.Text.UTF8Encoding $false))
+git add -A                          # ⚠ 只能在加忽略规则之后用；否则见下面的坑
 git commit -F .commitmsg.tmp
 Remove-Item .commitmsg.tmp -Force
 ```
+
+> **坑 3（本次实际踩到）**：`.gitmsg.tmp` / `.commitmsg.tmp` 这类临时文件
+> **自己会被 `git add -A` 加进提交**，然后你在提交后又删掉它，就会留下
+> 一个「提交里有个已删除的临时文件」的脏历史。
+>
+> **两道防线**：
+> 1. `.git/info/exclude` 里加上 `.commitmsg.tmp` / `.gitmsg.tmp` / `*.tmp`（已配好）
+> 2. 提交前用 §6 第 5 步的检查，把 `\.tmp$` 也纳入禁止模式
 
 ---
 
@@ -250,12 +271,14 @@ git status --short
 git add -A
 
 # 5. 再次确认暂存区没有不该传的
-$forbidden = git diff --cached --name-only | Select-String '^(typings/|_audit/)|project\.private\.config\.json|\.(png|jpg|jpeg|mp3|ttf|woff2?)$'
+$forbidden = git diff --cached --name-only | Select-String '^(typings/|_audit/)|project\.private\.config\.json|\.(png|jpg|jpeg|mp3|ttf|woff2?|tmp)$'
 if ($forbidden) { "❌ 暂存区含禁止文件：`n$forbidden"; exit 1 }
 
-# 6. 提交（先写好 .commitmsg.tmp，见 §4）
-git commit -F .commitmsg.tmp
-Remove-Item .commitmsg.tmp -Force
+# 6. 提交（推荐 -m，见 §4；用临时文件则先确认它已被忽略）
+$msg = @'
+<按 §4 写提交信息>
+'@
+git commit -m $msg
 
 # 7. 推送
 git push origin main
