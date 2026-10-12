@@ -23,7 +23,7 @@
 
 - `tools/lib/load-ts.mjs` — **可复用 TS 加载器** — `loadProject(relPath)`（动态 import 项目 .ts，必须在 hook 注册后）、`silenceWx()`（非小程序环境回落内存存储）、`PROJECT_ROOT`；import 即注册 resolve hook — 2026-10-08
 - `tools/lib/ts-resolve.mjs` — ESM resolve hook — 把无扩展名的相对导入补成 `.ts`（engine 内部写法是 `import './schema'`），**并支持目录导入 `./cyberpunk` → `cyberpunk/index.ts`**（2026-10-10 补，否则 `data/worlds/index.ts` 这类写法在 Node 里加载不了） — 2026-10-10
-- `tools/validate-data.mjs` — **数据契约校验（15 项）** — 直接 import 真实数据结构校验（非扫源码）：事件 id 唯一与 `cb_<阶段简称>_NNN` 命名、特质引用完整、标签来源闭合（特质 / **背景包** / 事件三路）、dropTags 有来源、caps 有来源、语义键 10 个合法、psyche 键 4 个合法、「无事件的所有选项都被门槛挡掉」、带 check 的选项必有 success+fail、stage 与 require.age 不矛盾、crit 只在 major、death 不在 success/critSuccess、years 1~5、正文 40~80、标签命名空间不混用；输出各阶段事件数 / DC 分布 / 语义键与 psyche 频次 / 标签产出消费比 / money 量级报数 — 2026-10-08
+- `tools/validate-data.mjs` — **数据契约校验（16 项）** — 直接 import 真实数据结构校验（非扫源码）：事件 id 唯一与 `cb_<阶段简称>_NNN` 命名、特质引用完整、标签来源闭合（特质 / **背景包** / 事件三路）、dropTags 有来源、caps 有来源、语义键 10 个合法、psyche 键 4 个合法、「无事件的所有选项都被门槛挡掉」、带 check 的选项必有 success+fail、stage 与 require.age 不矛盾、crit 只在 major、death 不在 success/critSuccess、years 1~5、正文 40~80、标签命名空间不混用、**相对导入必须指向真实 .ts 文件（第 16 项，拦目录导入——DevTools 运行时不解析 index，Node hook 会掩盖，见 2026-10-12 事故）**；输出各阶段事件数 / DC 分布 / 语义键与 psyche 频次 / 标签产出消费比 / money 量级报数 — 2026-10-12
 - `tools/simulate.mjs` — **批量模拟 + 文档目标断言** — `--runs` / `--system classic5|heart6|roulette` / `--strategy random|first|life`；输出寿命分布（最小/p25/中位/p75/最大）、死因分布、检定成功率、属性饱和度（中位/p90/贴顶比例）、life 模式的终局持有标签；对照 `01-heart6-spec.md` §6.1 的 40/55/60/65+ 目标做 ±3 岁断言 → **当前 4/5 档失败（预期行为，证明缺陷）** — 2026-10-08
 - `tools/typecheck-devtools.mjs` — **新建｜用 DevTools 自带的 TypeScript 4.1.2 跑类型检查** — 背景：DevTools 内置 TS 4.1.2，外部新 tsc 全绿 ≠ DevTools 能编译（`satisfies` 事故，见 PROJECT_SYNC 2026-10-12）；`npm run typecheck:devtools`；TS_LIB 路径含机器相关哈希，找不到时改文件顶部 TS_CANDIDATES — 2026-10-12
 - `tools/README.md` — 用法 / 参数 / 当前实测值 / **哪些断言在失败、为什么** / 与 `_audit/_scratch/` 历史脚本的对应关系 — 2026-10-08
@@ -63,7 +63,7 @@
 ## miniprogram/data/（数据层）
 
 - `data/attributes.ts` — **属性系统 + 语义键映射 + 时间漂移** — `AttrDef`（**2026-10-08 新增 `fatal?: boolean` 致命属性白名单**）`CLASSIC5`（五维；**`constitution` 体质标 `fatal: true`**）`HEART6`（六维心之禀赋，`health` → `{ vitality: 1 }`；**`vitality` 行力标 `fatal: true`**）`ROULETTE`（**全随机：复用 HEART6 的 `attrs` / `hidden` / `map`**，因此行力同样是唯一生死线）`ATTR_SYSTEMS` `CHECK_RULE` `TIME_DRIFT`（**已定档：20~59 行力 −0.5 / 身体 −0.25，60+ 各 −1；寿命档位 40 / 55 / 60 / 65+，见 01 文档第 6 节**）`MOOD_BASELINE` `MOOD_REGRESSION` `DEATH_THRESHOLD` — 2026-10-08
-- `data/worlds/index.ts` — 世界库注册表 — `WORLDS` `WORLD_LIST` — 2026-09-14
+- `data/worlds/index.ts` — 世界库注册表 — `WORLDS` `WORLD_LIST`；**⚠ 新增世界的 import 必须写全 `'./<worldId>/index'`**——DevTools 的 TS 编译不做「目录 → index」解析，写 `'./<worldId>'` 运行时按 `<worldId>.js` 找模块直接报「module is not defined」（2026-10-12 编译事故；validate 第 16 项会拦截） — 2026-10-12
 
 ## miniprogram/data/traits/（人物构建层 · 特质池）
 
