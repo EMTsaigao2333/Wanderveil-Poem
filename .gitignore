@@ -2,7 +2,8 @@ node_modules/
 miniprogram_npm/
 project.private.config.json
 miniprogram/project.private.config.json
-_audit/typings/
+_audit/
+*.tmp
 package-lock.json
 pnpm-lock.yaml
 yarn.lock

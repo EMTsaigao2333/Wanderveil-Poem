@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "typecheck": "tsc --noEmit -p miniprogram/tsconfig.json",
+    "typecheck:devtools": "node tools/typecheck-devtools.mjs",
     "validate": "node tools/validate-data.mjs",
     "simulate": "node tools/simulate.mjs"
   },

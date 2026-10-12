@@ -6,7 +6,11 @@
 ## 根目录
 
 - `PROJECT_SYNC.md` — 项目同步文件（多 AI 协作总入口：决策/看板/交接日志/工作流规则） — 开工前必读 — 2026-09-23
-- `FILE_INDEX.md` — 本索引文件 — 2026-10-08
+- `FILE_INDEX.md` — 本索引文件 — 2026-10-10
+- `README.md` — **新建（2026-10-12，dsh）** — GitHub 仓库门面：项目简介 / 预览 / 玩法说明 / 技术栈 / 快速开始 / 目录结构 / 开发约定 / 授权说明 — 2026-10-12
+- `LICENSE` — **新建（2026-10-12，dsh）** — 代码授权（MIT） — 2026-10-12
+- `LICENSE-CONTENT` — **新建（2026-10-12，dsh）** — **内容资产单独授权**（世界观 / 文本 / 美术素材版权保留，与代码授权分离） — 2026-10-12
+- `docs/github-upload-rules.md` — **新建（2026-10-12，dsh）** — **给自动化智能体的 GitHub 上传操作手册**：提交前检查清单 / 提交信息规范 / 严禁事项（不删 typings / 不动 project.config.json 等） / check-ignore 用法 — 2026-10-12
 - `package.json` — 项目依赖与脚本 — 无业务依赖；**scripts 已补 `typecheck`（`tsc --noEmit -p miniprogram/tsconfig.json`）**；`validate` / `simulate` 待 P0-B 建 `tools/` 后再补 — 2026-10-08
 - `project.config.json` — **小程序项目配置（DevTools 实际读取的那份）** — appid（测试号 `wxfa24fde2ed5bd6ef`）、`miniprogramRoot: miniprogram/`、**`useCompilerPlugins: ["typescript"]`**、**`es6: true`（2026-10-08 由 `false` 改正）**、**`libVersion: 3.17.2`（原 `trial`，改为固定稳定版，避免跟随官方灰度漂移）** — 2026-10-08
 - `project.private.config.json` — 本地私有配置（个人覆盖项） — **不入库（已写入 .gitignore）**；已清理失效的 `styletest/index` 编译条件 — 2026-10-08
@@ -21,6 +25,7 @@
 - `tools/lib/ts-resolve.mjs` — ESM resolve hook — 把无扩展名的相对导入补成 `.ts`（engine 内部写法是 `import './schema'`），**并支持目录导入 `./cyberpunk` → `cyberpunk/index.ts`**（2026-10-10 补，否则 `data/worlds/index.ts` 这类写法在 Node 里加载不了） — 2026-10-10
 - `tools/validate-data.mjs` — **数据契约校验（15 项）** — 直接 import 真实数据结构校验（非扫源码）：事件 id 唯一与 `cb_<阶段简称>_NNN` 命名、特质引用完整、标签来源闭合（特质 / **背景包** / 事件三路）、dropTags 有来源、caps 有来源、语义键 10 个合法、psyche 键 4 个合法、「无事件的所有选项都被门槛挡掉」、带 check 的选项必有 success+fail、stage 与 require.age 不矛盾、crit 只在 major、death 不在 success/critSuccess、years 1~5、正文 40~80、标签命名空间不混用；输出各阶段事件数 / DC 分布 / 语义键与 psyche 频次 / 标签产出消费比 / money 量级报数 — 2026-10-08
 - `tools/simulate.mjs` — **批量模拟 + 文档目标断言** — `--runs` / `--system classic5|heart6|roulette` / `--strategy random|first|life`；输出寿命分布（最小/p25/中位/p75/最大）、死因分布、检定成功率、属性饱和度（中位/p90/贴顶比例）、life 模式的终局持有标签；对照 `01-heart6-spec.md` §6.1 的 40/55/60/65+ 目标做 ±3 岁断言 → **当前 4/5 档失败（预期行为，证明缺陷）** — 2026-10-08
+- `tools/typecheck-devtools.mjs` — **新建｜用 DevTools 自带的 TypeScript 4.1.2 跑类型检查** — 背景：DevTools 内置 TS 4.1.2，外部新 tsc 全绿 ≠ DevTools 能编译（`satisfies` 事故，见 PROJECT_SYNC 2026-10-12）；`npm run typecheck:devtools`；TS_LIB 路径含机器相关哈希，找不到时改文件顶部 TS_CANDIDATES — 2026-10-12
 - `tools/README.md` — 用法 / 参数 / 当前实测值 / **哪些断言在失败、为什么** / 与 `_audit/_scratch/` 历史脚本的对应关系 — 2026-10-08
 
 ## docs/design/（第 0 步设计文档，2026-09-23 产出并**全部确认落定**）
