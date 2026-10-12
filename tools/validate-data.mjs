@@ -341,6 +341,41 @@ check('特质标签与事件标签的命名空间没有混用', () => {
   return out;
 });
 
+// 16. 禁止目录导入：DevTools 的 TS 编译不做「目录 → index」解析，
+//     `import x from './worlds/cyberpunk'` 运行时会按 cyberpunk.js 找模块直接报
+//     「module is not defined」（2026-10-12 编译事故）。每个相对导入必须落在真实 .ts 文件上。
+//     背景：本仓库的 Node 工具链（tools/lib/ts-resolve.mjs）会补 /index.ts，把这类 bug 在
+//     Node 验证里掩盖掉，所以必须在这里静态拦住。
+import fs from 'node:fs';
+import path from 'node:path';
+check('相对导入都指向真实 .ts 文件（禁止目录导入，DevTools 不解析 index）', () => {
+  const out = [];
+  const miniprogramDir = path.resolve(import.meta.dirname, '..', 'miniprogram');
+  const files = [];
+  (function walk(dir) {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith('.ts')) files.push(p);
+    }
+  })(miniprogramDir);
+  const re = /(?:from|import)\s*['"](\.[^'"]+)['"]/g;
+  for (const file of files) {
+    const src = fs.readFileSync(file, 'utf8');
+    for (const m of src.matchAll(re)) {
+      const spec = m[1];
+      const resolved = path.resolve(path.dirname(file), spec);
+      if (fs.existsSync(resolved + '.ts')) continue; // 指向真实文件 ✔
+      if (fs.existsSync(path.join(resolved, 'index.ts'))) {
+        out.push(`${path.relative(path.dirname(miniprogramDir), file).replace(/\\/g, '/')} 导入了目录 '${spec}' —— 请写全 '${spec}/index'（DevTools 运行时按 <路径>.js 找模块，目录导入必炸）`);
+      } else {
+        out.push(`${path.relative(path.dirname(miniprogramDir), file).replace(/\\/g, '/')} 导入了不存在的模块 '${spec}'（没有对应的 .ts 文件）`);
+      }
+    }
+  }
+  return out;
+});
+
 /* ------------------------------------------------------------------ */
 /* 统计                                                                */
 /* ------------------------------------------------------------------ */
