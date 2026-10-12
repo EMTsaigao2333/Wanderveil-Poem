@@ -3,6 +3,7 @@ miniprogram_npm/
 project.private.config.json
 miniprogram/project.private.config.json
 _audit/
+.cloudbase/
 *.tmp
 package-lock.json
 pnpm-lock.yaml
