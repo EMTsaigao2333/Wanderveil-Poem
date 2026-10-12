@@ -113,8 +113,14 @@ function deltaText(effects: Effects | undefined, currency: string): string {
   }
   if (effects.money) parts.push(`${currency} ${effects.money > 0 ? '+' : ''}${effects.money}`);
   if (effects.psyche) {
-    for (const [key, value] of Object.entries(effects.psyche)) {
-      const label = PSYCHE_LABEL[key as keyof typeof PSYCHE_LABEL] ?? key;
+    // 显式标注成元组数组：TS 4.1 下 Object.entries 的 value 推断为可空，
+    // 直接参与运算会报 TS2532（Object is possibly 'undefined'）。
+    for (const [key, value] of Object.entries(effects.psyche) as [
+      keyof typeof PSYCHE_LABEL,
+      number | undefined,
+    ][]) {
+      if (value === undefined) continue;
+      const label = PSYCHE_LABEL[key] ?? key;
       parts.push(`${label} ${value > 0 ? '+' : ''}${value}`);
     }
   }

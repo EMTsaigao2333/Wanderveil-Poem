@@ -515,7 +515,11 @@ Component({
         return;
       }
       if (typeof wx !== 'undefined' && typeof wx.setStorageSync === 'function') {
-        wx.setStorageSync(PENDING_START_KEY, { mode: 'continue' } satisfies PendingStart);
+        // 注意：不要用 `satisfies`（TypeScript 4.9+ 语法）。
+        // 微信开发者工具内置的是 TypeScript 4.1.2，遇到 `satisfies` 会直接语法报错、
+        // 整包编译不过。此处用显式类型标注，等价且兼容。
+        const pending: PendingStart = { mode: 'continue' };
+        wx.setStorageSync(PENDING_START_KEY, pending);
       }
       wx.navigateTo({ url: '/pages/play/play' });
     },
