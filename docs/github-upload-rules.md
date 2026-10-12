@@ -148,12 +148,17 @@ git ls-tree -r HEAD --name-only | Select-String '^typings/'   # 应为空
 
 ```powershell
 foreach ($p in 'typings/index.d.ts','_audit/README.md','project.private.config.json','LICENSE') {
-  $r = git check-ignore -v $p
-  if ($r) { "忽略  $p" } else { "未忽略 $p" }
+  git check-ignore -q $p
+  if ($LASTEXITCODE -eq 0) { "✅ 已忽略   $p" } else { "◻  未忽略 $p" }
 }
 ```
 
-> ⚠️ 不要在 `foreach` 里用 `$r` 当循环变量再复用给其他名字——会互相覆盖导致误判。
+> **坑 0（PowerShell 专有，很容易踩）**：**不要写 `if (git check-ignore -q $p) { ... }`**。
+> `-q` 让 git 静默，但 **PowerShell 判断的是命令的字符串输出，不是退出码**；
+> 空输出被视为……不稳定，实测会给出错误结论。
+> **必须显式比较 `$LASTEXITCODE`。**
+>
+> 同理，循环里不要复用 `$r` 之类的变量名给不同的东西，会互相覆盖导致误判。
 
 ---
 
