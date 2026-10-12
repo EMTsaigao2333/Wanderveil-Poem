@@ -1,17 +1,32 @@
 {
-  "name": "miniprogram-ts-quickstart",
-  "version": "1.0.0",
-  "description": "",
+  "name": "wanderveil-poem",
+  "version": "0.1.0",
+  "description": "幻行诗篇 · Wanderveil Poem —— 微信小程序，类「人生重开模拟器」的叙事化人生模拟游戏",
+  "private": true,
   "scripts": {
     "typecheck": "tsc --noEmit -p miniprogram/tsconfig.json",
     "validate": "node tools/validate-data.mjs",
     "simulate": "node tools/simulate.mjs"
   },
-  "keywords": [],
-  "author": "",
-  "license": "",
-  "dependencies": {
+  "keywords": [
+    "wechat",
+    "miniprogram",
+    "life-simulator",
+    "trpg",
+    "narrative",
+    "typescript"
+  ],
+  "author": "爱密莉娅",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EMTsaigao2333/Wanderveil-Poem.git"
   },
+  "homepage": "https://github.com/EMTsaigao2333/Wanderveil-Poem#readme",
+  "bugs": {
+    "url": "https://github.com/EMTsaigao2333/Wanderveil-Poem/issues"
+  },
+  "dependencies": {},
   "devDependencies": {
     "miniprogram-api-typings": "^2.8.3-1"
   }

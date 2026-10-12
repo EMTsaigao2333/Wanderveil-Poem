@@ -2,4 +2,9 @@ node_modules/
 miniprogram_npm/
 project.private.config.json
 miniprogram/project.private.config.json
-_audit/
+_audit/typings/
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+.DS_Store
+Thumbs.db
